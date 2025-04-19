@@ -1,12 +1,28 @@
 
-import React from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import { AuthProvider, useAuth } from "./contexts/AuthContext";
+import Login from "./pages/Login";
+import Home from "./pages/Home";
 
-function App() {
-  return (
-    <div className="text-white bg-gray-900 h-screen flex items-center justify-center">
-      <h1 className="text-3xl font-bold">Mage Token Sender</h1>
-    </div>
-  );
+function PrivateRoute({ children }) {
+  const { user } = useAuth();
+  return user ? children : <Navigate to="/login" />;
 }
 
-export default App;
+export default function App() {
+  return (
+    <Router>
+      <AuthProvider>
+        <Routes>
+          <Route path="/login" element={<Login />} />
+          <Route path="/home" element={
+            <PrivateRoute>
+              <Home />
+            </PrivateRoute>
+          } />
+          <Route path="*" element={<Navigate to="/home" />} />
+        </Routes>
+      </AuthProvider>
+    </Router>
+  );
+}
