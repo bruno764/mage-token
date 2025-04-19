@@ -2,9 +2,8 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import Landing from "./pages/Landing";
-import Login from "./pages/Login";
-import Home from "./pages/Home"; // Painel
-// import TelegramSender from "./pages/TelegramSender"; // Ativar se já estiver criado
+import Auth from "./pages/Auth"; // Login/Register real
+import Home from "./pages/Home"; // Dashboard após login
 
 function PrivateRoute({ children }) {
   const { user } = useAuth();
@@ -17,7 +16,7 @@ export default function App() {
       <AuthProvider>
         <Routes>
           <Route path="/" element={<Landing />} />
-          <Route path="/auth" element={<Login />} />
+          <Route path="/auth" element={<Auth />} />
           <Route
             path="/dashboard"
             element={
@@ -26,11 +25,9 @@ export default function App() {
               </PrivateRoute>
             }
           />
-          {/* <Route path="/telegram" element={<PrivateRoute><TelegramSender /></PrivateRoute>} /> */}
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>
       </AuthProvider>
     </Router>
   );
 }
-  
