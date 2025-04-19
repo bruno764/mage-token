@@ -64,7 +64,39 @@ export default function Home() {
   const renderTabContent = () => {
     switch (activeTab) {
       case "telegram":
-        return <div>🔮 Sistema de disparo via Telegram</div>;
+        return (
+          <div className="space-y-6">
+            <h3 className="text-2xl font-bold">🔮 Disparo via Telegram</h3>
+
+            <textarea
+              rows={5}
+              placeholder="Escreva sua mensagem aqui..."
+              className="w-full p-4 rounded bg-gray-800 text-white placeholder-gray-400 resize-none"
+            />
+
+            <div className="grid md:grid-cols-2 gap-4">
+              <select className="bg-gray-800 text-white p-3 rounded">
+                <option value="pv">Privado (PV)</option>
+                <option value="grupo">Grupo</option>
+                <option value="resposta">Resposta a mensagens</option>
+              </select>
+
+              <input
+                type="file"
+                className="bg-gray-800 text-white p-3 rounded cursor-pointer"
+              />
+            </div>
+
+            <div className="flex gap-4 mt-4">
+              <button className="bg-green-600 hover:bg-green-700 px-6 py-3 rounded font-bold">
+                ▶️ Iniciar Envio
+              </button>
+              <button className="bg-red-600 hover:bg-red-700 px-6 py-3 rounded font-bold">
+                ⛔ Parar Campanha
+              </button>
+            </div>
+          </div>
+        );
       case "whatsapp":
         return <div>📱 Integração com WhatsApp</div>;
       case "facebook":
