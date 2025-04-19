@@ -22,22 +22,27 @@ export default function Auth() {
     try {
       if (isRegistering) {
         const result = await createUserWithEmailAndPassword(auth, email, password);
-        await setDoc(doc(db, "users", result.user.uid), {
+        const userRef = doc(db, "users", result.user.uid);
+
+        await setDoc(userRef, {
           email: result.user.email,
           createdAt: new Date().toISOString(),
           isPremium: false,
         });
+
+        console.log("Usuário registrado e salvo no Firestore:", result.user.email);
       } else {
-        await signInWithEmailAndPassword(auth, email, password);
+        const result = await signInWithEmailAndPassword(auth, email, password);
+        console.log("Usuário logado:", result.user.email);
       }
 
       navigate("/dashboard");
     } catch (err) {
+      console.error("Erro de autenticação:", err);
       setError("Erro ao autenticar. Verifique suas credenciais.");
-      console.error(err);
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
   };
 
   return (
