@@ -1,7 +1,9 @@
-import React from 'react';
-import { useState } from "react";
+import React, { useState } from "react";
 import { auth, db } from "../firebase/firebase";
-import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from "firebase/auth";
+import {
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+} from "firebase/auth";
 import { doc, setDoc } from "firebase/firestore";
 
 export default function Login() {
@@ -11,7 +13,7 @@ export default function Login() {
   const handleAuth = async () => {
     try {
       const result = await signInWithEmailAndPassword(auth, email, password);
-      console.log("Logged in:", result.user.email);
+      console.log("Login realizado:", result.user.email);
     } catch {
       const result = await createUserWithEmailAndPassword(auth, email, password);
       await setDoc(doc(db, "users", result.user.uid), {
@@ -22,30 +24,33 @@ export default function Login() {
   };
 
   return (
-    <div className="h-screen bg-gradient-to-br from-gray-900 to-gray-800 text-white flex items-center justify-center px-6">
-      <div className="w-full max-w-md bg-gray-900 rounded-lg shadow-lg p-8">
-        <h2 className="text-2xl font-bold mb-6 text-center">Mage Token - Login</h2>
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-black via-gray-900 to-black text-white px-4">
+      <div className="bg-gray-900 p-8 rounded-xl shadow-xl w-full max-w-md">
+        <h2 className="text-3xl font-bold text-center mb-6 text-purple-400">
+          Acesse o Mage Token
+        </h2>
 
         <input
           type="email"
-          placeholder="Email"
-          className="w-full mb-4 p-3 rounded bg-gray-800 text-white placeholder-gray-400 outline-none"
+          placeholder="Seu email"
+          className="w-full mb-4 p-3 rounded bg-gray-800 text-white placeholder-gray-400 border border-gray-700 focus:outline-none focus:ring-2 focus:ring-purple-600"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
         />
+
         <input
           type="password"
-          placeholder="Password"
-          className="w-full mb-6 p-3 rounded bg-gray-800 text-white placeholder-gray-400 outline-none"
+          placeholder="Sua senha"
+          className="w-full mb-6 p-3 rounded bg-gray-800 text-white placeholder-gray-400 border border-gray-700 focus:outline-none focus:ring-2 focus:ring-purple-600"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
         />
 
         <button
           onClick={handleAuth}
-          className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded transition"
+          className="w-full bg-purple-600 hover:bg-purple-700 transition font-semibold py-3 rounded text-white"
         >
-          Sign In / Register
+          Entrar ou Criar Conta
         </button>
       </div>
     </div>
