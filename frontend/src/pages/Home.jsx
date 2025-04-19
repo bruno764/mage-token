@@ -7,11 +7,11 @@ export default function Home() {
   const navigate = useNavigate();
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white p-8">
-      <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold">📡 Mage Token - Platforms</h1>
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 text-white px-6 py-8">
+      <div className="flex justify-between items-center mb-10">
+        <h1 className="text-3xl md:text-4xl font-extrabold">📡 Mage Token</h1>
         <button
-          className="bg-red-600 px-4 py-2 rounded"
+          className="bg-red-500 hover:bg-red-700 px-4 py-2 rounded-lg text-sm font-semibold"
           onClick={() => {
             logout();
             navigate("/login");
@@ -20,7 +20,10 @@ export default function Home() {
           Logout
         </button>
       </div>
-      <div className="grid grid-cols-2 gap-6 text-center">
+
+      <h2 className="text-xl mb-6 font-semibold">Choose a Platform</h2>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
         <PlatformButton name="Telegram" color="bg-purple-600" />
         <PlatformButton name="WhatsApp" color="bg-green-600" />
         <PlatformButton name="Facebook" color="bg-blue-800" />
@@ -35,7 +38,7 @@ export default function Home() {
 function PlatformButton({ name, color }) {
   return (
     <button
-      className={`text-white py-6 rounded-xl text-xl font-semibold ${color}`}
+      className={`w-full py-6 rounded-xl text-lg font-semibold shadow-md transition transform hover:scale-105 ${color}`}
       onClick={() => alert(`${name} module coming soon!`)}
     >
       {name}

@@ -22,22 +22,32 @@ export default function Login() {
   };
 
   return (
-    <div className="h-screen bg-gray-900 text-white flex items-center justify-center flex-col gap-4">
-      <h2 className="text-2xl font-bold">Mage Token - Login</h2>
-      <input
-        className="p-2 text-black rounded"
-        placeholder="Email"
-        value={email}
-        onChange={(e) => setEmail(e.target.value)}
-      />
-      <input
-        className="p-2 text-black rounded"
-        placeholder="Password"
-        type="password"
-        value={password}
-        onChange={(e) => setPassword(e.target.value)}
-      />
-      <button onClick={handleAuth} className="bg-blue-600 px-4 py-2 rounded">Sign In / Register</button>
+    <div className="h-screen bg-gradient-to-br from-gray-900 to-gray-800 text-white flex items-center justify-center px-6">
+      <div className="w-full max-w-md bg-gray-900 rounded-lg shadow-lg p-8">
+        <h2 className="text-2xl font-bold mb-6 text-center">Mage Token - Login</h2>
+
+        <input
+          type="email"
+          placeholder="Email"
+          className="w-full mb-4 p-3 rounded bg-gray-800 text-white placeholder-gray-400 outline-none"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+        />
+        <input
+          type="password"
+          placeholder="Password"
+          className="w-full mb-6 p-3 rounded bg-gray-800 text-white placeholder-gray-400 outline-none"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+        />
+
+        <button
+          onClick={handleAuth}
+          className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded transition"
+        >
+          Sign In / Register
+        </button>
+      </div>
     </div>
   );
 }
