@@ -1,7 +1,7 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import wizard from "../assets/mascote.png";
-import telegramIcon from "../assets/telegram.png";
+import socialIcons from "../assets/social-icons.png"; // Ícones sociais
 
 export default function Landing() {
   const navigate = useNavigate();
@@ -58,9 +58,17 @@ export default function Landing() {
 
         {/* RECURSOS */}
         <div className="bg-[#1c152b] p-6 rounded-2xl shadow-lg text-center">
-          <h2 className="text-xl font-bold mb-4">Recursos</h2>
-          <img src={telegramIcon} alt="Telegram" className="w-12 h-12 mx-auto mb-2" />
-          <p className="font-semibold text-blue-400 mb-3">Automação Multiplataforma</p>
+          <h2 className="text-xl font-bold mb-3">Recursos</h2>
+
+          {/* Ícones Sociais */}
+          <img
+            src={socialIcons}
+            alt="Redes Sociais"
+            className="w-[100px] h-auto mx-auto mb-2"
+          />
+
+          <p className="font-semibold text-blue-400 mb-2 text-sm">Automação Multiplataforma</p>
+
           <ul className="text-sm text-gray-300 space-y-1 text-left">
             <li>• Envio para Telegram, WhatsApp, Facebook, X e Discord</li>
             <li>• Filtros inteligentes e rotação de contas</li>
