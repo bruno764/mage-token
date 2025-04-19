@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { auth, db } from "../firebase/firebase";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDoc, setDoc } from "firebase/firestore";
 import { useNavigate } from "react-router-dom";
 
 export default function Home() {
@@ -32,9 +32,30 @@ export default function Home() {
     }
   };
 
-  useEffect(() => {
-    fetchUserData();
-  }, []);
+  const handleUpgrade = async () => {
+    try {
+      const user = auth.currentUser;
+      if (!user) return;
+
+      const validade = new Date();
+      validade.setMonth(validade.getMonth() + 1);
+
+      const userRef = doc(db, "users", user.uid);
+      await setDoc(userRef, {
+        ...userData,
+        isPremium: true,
+        validUntil: validade.toISOString(),
+      });
+
+      setUserData((prev) => ({
+        ...prev,
+        isPremium: true,
+        validUntil: validade.toISOString(),
+      }));
+    } catch (err) {
+      console.error("Erro ao ativar plano premium:", err);
+    }
+  };
 
   const renderTabContent = () => {
     switch (activeTab) {
@@ -52,6 +73,35 @@ export default function Home() {
         return <div>📊 Estatísticas e Relatórios</div>;
       case "historico":
         return <div>🕓 Histórico de Campanhas</div>;
+      case "upgrade":
+        return (
+          <div>
+            <h3 className="text-2xl font-bold mb-4">💳 Upgrade de Plano</h3>
+
+            {userData?.isPremium ? (
+              <div className="text-green-400">
+                Você já é um membro <strong>Premium</strong>! <br />
+                Validade:{" "}
+                <span className="text-white font-semibold">
+                  {new Date(userData.validUntil).toLocaleDateString()}
+                </span>
+              </div>
+            ) : (
+              <>
+                <p className="text-gray-300 mb-4">
+                  Faça upgrade e tenha acesso a todas as plataformas sem limites,
+                  com suporte prioritário e ferramentas exclusivas.
+                </p>
+                <button
+                  onClick={handleUpgrade}
+                  className="bg-orange-500 hover:bg-orange-600 px-6 py-3 rounded font-bold"
+                >
+                  Ativar Premium (R$ 49/mês)
+                </button>
+              </>
+            )}
+          </div>
+        );
       default:
         return <div>Selecione uma plataforma.</div>;
     }
@@ -61,7 +111,7 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-black to-gray-900 text-white flex font-sans">
-      
+
       {/* Sidebar */}
       <div className="w-64 bg-[#1c152b] p-6 space-y-4 shadow-xl">
         <h2 className="text-xl font-bold mb-6">📡 Plataformas</h2>
@@ -73,6 +123,7 @@ export default function Home() {
         <hr className="my-4 border-gray-600" />
         <button onClick={() => setActiveTab("estatisticas")} className="w-full bg-gray-800 hover:bg-cyan-600 py-2 rounded">📊 Estatísticas</button>
         <button onClick={() => setActiveTab("historico")} className="w-full bg-gray-800 hover:bg-orange-600 py-2 rounded">📜 Histórico</button>
+        <button onClick={() => setActiveTab("upgrade")} className="w-full bg-yellow-600 hover:bg-yellow-700 py-2 rounded">💳 Upgrade de Plano</button>
         <button
           onClick={() => {
             auth.signOut();
@@ -91,19 +142,10 @@ export default function Home() {
           {userData ? (
             <>
               <p><span className="font-bold">Email:</span> {userData.email}</p>
-              <p>
-                <span className="font-bold">Plano:</span>{" "}
-                {userData.isPremium ? "Premium" : "Grátis"}
-              </p>
-              <p>
-                <span className="font-bold">Criado em:</span>{" "}
-                {new Date(userData.createdAt).toLocaleString()}
-              </p>
+              <p><span className="font-bold">Plano:</span> {userData.isPremium ? "Premium" : "Grátis"}</p>
+              <p><span className="font-bold">Criado em:</span> {new Date(userData.createdAt).toLocaleString()}</p>
               {userData.isPremium && userData.validUntil && (
-                <p>
-                  <span className="font-bold">Válido até:</span>{" "}
-                  {new Date(userData.validUntil).toLocaleDateString()}
-                </p>
+                <p><span className="font-bold">Válido até:</span> {new Date(userData.validUntil).toLocaleDateString()}</p>
               )}
             </>
           ) : (
