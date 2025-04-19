@@ -1,20 +1,16 @@
 import React from "react";
-import { useNavigate } from "react-router-dom";
-import logo from "../assets/logo.png";
 import mascot from "../assets/mascote.png";
 import banner from "../assets/banner.png";
-import Navbar from "../components/Navbar"; // ⬅️ novo
+import FloatingCTA from "../components/FloatingCTA";
+import Navbar from "../components/Navbar";
 
 export default function Home() {
-  const navigate = useNavigate();
-
   return (
     <div className="bg-gradient-to-br from-gray-900 to-gray-800 text-white min-h-screen">
-      {/* ✅ Navbar no topo */}
       <Navbar />
 
       {/* Hero Section */}
-      <section className="text-center px-6 py-10">
+      <section id="hero" className="text-center px-6 py-10">
         <img src={mascot} alt="Mascote" className="mx-auto w-40 h-40 mb-4" />
         <h2 className="text-3xl md:text-5xl font-bold mb-4">Automatize sua Divulgação</h2>
         <p className="text-gray-300 max-w-xl mx-auto mb-6">
@@ -42,7 +38,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Preços */}
+      {/* Planos */}
       <section id="planos" className="px-6 py-10">
         <h3 className="text-2xl font-bold text-center mb-8">Planos</h3>
         <div className="grid md:grid-cols-3 gap-6">
@@ -83,6 +79,9 @@ export default function Home() {
       <footer className="text-center text-gray-400 text-sm py-6">
         © {new Date().getFullYear()} Mage Token · Todos os direitos reservados
       </footer>
+
+      {/* Botão flutuante */}
+      <FloatingCTA />
     </div>
   );
 }

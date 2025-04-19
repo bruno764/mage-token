@@ -1,15 +1,16 @@
 import React, { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import logo from "../assets/logo.png";
+import { Link as ScrollLink } from "react-scroll";
 
 export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
   const navigate = useNavigate();
 
   const navItems = [
-    { name: "Início", to: "/" },
-    { name: "Funcionalidades", to: "#features" },
-    { name: "Planos", to: "#planos" },
+    { name: "Início", to: "hero" },
+    { name: "Funcionalidades", to: "features" },
+    { name: "Planos", to: "planos" },
   ];
 
   return (
@@ -20,15 +21,17 @@ export default function Navbar() {
           <h1 className="text-xl font-extrabold text-purple-400">Mage Token</h1>
         </div>
 
-        <div className="hidden md:flex gap-6">
+        <div className="hidden md:flex gap-6 items-center">
           {navItems.map((item) => (
-            <a
+            <ScrollLink
               key={item.name}
-              href={item.to}
-              className="text-white hover:text-purple-400 transition font-medium"
+              to={item.to}
+              smooth={true}
+              duration={500}
+              className="cursor-pointer text-white hover:text-purple-400 transition font-medium"
             >
               {item.name}
-            </a>
+            </ScrollLink>
           ))}
           <button
             onClick={() => navigate("/auth")}
@@ -53,13 +56,16 @@ export default function Navbar() {
       {menuOpen && (
         <div className="md:hidden px-4 pb-4">
           {navItems.map((item) => (
-            <a
+            <ScrollLink
               key={item.name}
-              href={item.to}
-              className="block text-white py-2 border-b border-gray-700"
+              to={item.to}
+              smooth={true}
+              duration={500}
+              className="block text-white py-2 border-b border-gray-700 cursor-pointer"
+              onClick={() => setMenuOpen(false)}
             >
               {item.name}
-            </a>
+            </ScrollLink>
           ))}
           <button
             onClick={() => navigate("/auth")}
