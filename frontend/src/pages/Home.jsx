@@ -3,25 +3,15 @@ import { useNavigate } from "react-router-dom";
 import logo from "../assets/logo.png";
 import mascot from "../assets/mascote.png";
 import banner from "../assets/banner.png";
+import Navbar from "../components/Navbar"; // ⬅️ novo
 
 export default function Home() {
   const navigate = useNavigate();
 
   return (
     <div className="bg-gradient-to-br from-gray-900 to-gray-800 text-white min-h-screen">
-      {/* Header */}
-      <header className="flex justify-between items-center px-6 py-4 shadow-lg bg-black bg-opacity-70">
-        <div className="flex items-center gap-4">
-          <img src={logo} alt="Mage Token Logo" className="w-10 h-10" />
-          <h1 className="text-2xl font-bold">Mage Token</h1>
-        </div>
-        <button
-          onClick={() => navigate("/login")}
-          className="bg-white text-black px-4 py-2 rounded hover:bg-gray-200 font-semibold text-sm"
-        >
-          Entrar
-        </button>
-      </header>
+      {/* ✅ Navbar no topo */}
+      <Navbar />
 
       {/* Hero Section */}
       <section className="text-center px-6 py-10">
@@ -33,8 +23,8 @@ export default function Home() {
         <img src={banner} alt="Imagem promocional" className="rounded-xl shadow-xl mx-auto max-w-full" />
       </section>
 
-      {/* Features */}
-      <section className="px-6 py-10 bg-gray-950">
+      {/* Funcionalidades */}
+      <section id="features" className="px-6 py-10 bg-gray-950">
         <h3 className="text-2xl font-bold text-center mb-8">Funcionalidades</h3>
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {[
@@ -53,7 +43,7 @@ export default function Home() {
       </section>
 
       {/* Preços */}
-      <section className="px-6 py-10">
+      <section id="planos" className="px-6 py-10">
         <h3 className="text-2xl font-bold text-center mb-8">Planos</h3>
         <div className="grid md:grid-cols-3 gap-6">
           {[
