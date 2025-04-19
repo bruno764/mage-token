@@ -4,8 +4,6 @@ import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import Landing from "./pages/Landing";
 import Login from "./pages/Login";
 import Home from "./pages/Home"; // Dashboard
-import TelegramSender from "./pages/TelegramSender"; // futuro
-// Você pode remover TelegramSender se ainda não criou o arquivo
 
 function PrivateRoute({ children }) {
   const { user } = useAuth();
