@@ -8,35 +8,33 @@ export default function Landing() {
 
   return (
     <div className="relative min-h-screen bg-[#0f0a1a] text-white px-4 py-10 overflow-hidden font-sans">
-
-      {/* 🔮 FUNDO COM BRILHO */}
+      {/* 🔮 FUNDO GRADIENTE */}
       <div className="absolute inset-0 bg-gradient-radial from-purple-800/20 via-transparent to-transparent animate-pulse z-0" />
 
       {/* 🔮 MASCOTE DIREITA */}
       <img
         src={wizard}
         alt="Mascote"
-        className="absolute bottom-0 right-0 w-[380px] md:w-[460px] xl:w-[500px] pointer-events-none select-none z-10"
+        className="absolute top-10 right-0 w-[400px] md:w-[480px] xl:w-[520px] pointer-events-none select-none z-10"
       />
 
-      {/* TÍTULO & SUBTÍTULO */}
-      <div className="max-w-6xl mx-auto z-20 relative text-left md:text-left">
+      {/* 🔠 TÍTULO E DESCRIÇÃO */}
+      <div className="max-w-6xl mx-auto z-20 relative text-left pb-4 mb-8">
         <h1 className="text-5xl md:text-6xl font-extrabold mb-4">Mage Token</h1>
         <p className="text-lg md:text-xl text-gray-300 max-w-2xl">
           Plataforma completa para automação de mensagens no Telegram, WhatsApp, Facebook, Discord e X.
         </p>
 
-        {/* CTA */}
         <button
           onClick={() => navigate("/auth")}
-          className="mt-6 bg-orange-500 hover:bg-orange-600 text-white font-semibold px-6 py-3 text-lg rounded-full shadow-md transition"
+          className="mt-6 ml-2 md:ml-0 bg-orange-500 hover:bg-orange-600 text-white font-semibold px-6 py-3 text-lg rounded-full shadow-md transition"
         >
           Comece agora
         </button>
       </div>
 
-      {/* 🔳 BLOCO DE PAINÉIS */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-16 max-w-6xl mx-auto relative z-20">
+      {/* 🔳 SEÇÕES */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6 max-w-6xl mx-auto relative z-20">
         {/* LOGIN */}
         <div className="bg-[#1c152b] p-6 rounded-2xl shadow-lg">
           <h2 className="text-xl font-bold mb-4">Cadastro/Login</h2>
@@ -91,7 +89,7 @@ export default function Landing() {
       {/* FLOATING CTA */}
       <button
         onClick={() => navigate("/auth")}
-        className="fixed bottom-6 right-6 bg-green-500 hover:bg-green-600 text-black font-bold py-3 px-6 rounded-full shadow-xl transition z-50"
+        className="fixed bottom-6 right-6 bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 px-6 rounded-full shadow-xl transition z-50"
       >
         💬 Comece Agora
       </button>
