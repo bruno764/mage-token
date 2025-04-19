@@ -1,79 +1,85 @@
-import React from 'react';
-import { useNavigate } from 'react-router-dom';
-import FloatingCTA from '../components/FloatingCTA';
-import banner from '../assets/banner1.png';
+import React from "react";
+import { useNavigate } from "react-router-dom";
+import wizard from "../assets/mascote.png";       // mascote isolado à direita
+import telegramIcon from "../assets/telegram.png"; // ícone do Telegram
 
 export default function Landing() {
   const navigate = useNavigate();
 
   return (
-    <div className="bg-gradient-to-br from-black via-gray-900 to-black text-white min-h-screen font-sans">
-      {/* Hero */}
-      <section id="hero" className="text-center py-20 px-6 max-w-4xl mx-auto">
-        <h2 className="text-4xl md:text-5xl font-extrabold mb-6">
-          Dispare mensagens em massa com inteligência e total segurança.
-        </h2>
-        <p className="text-gray-300 mb-8 text-lg">
-          A plataforma mais completa do Brasil para automação de mensagens em Telegram, WhatsApp, Facebook, Discord e X.
+    <div className="min-h-screen bg-gradient-to-br from-[#0f0f1a] to-[#1a1a2e] text-white px-4 py-12 font-sans relative overflow-hidden flex flex-col items-center">
+      {/* 🔮 MASCOTE ATRÁS */}
+      <img
+        src={wizard}
+        alt="Mascote"
+        className="absolute right-0 bottom-0 max-w-[380px] md:max-w-[460px] opacity-90 pointer-events-none select-none z-0"
+      />
+
+      {/* 🔠 TÍTULOS */}
+      <div className="text-center z-10">
+        <h1 className="text-4xl md:text-5xl font-extrabold">Mage Token</h1>
+        <p className="mt-4 text-lg md:text-xl text-gray-300">
+          Automatize suas mensagens nas principais plataformas!
         </p>
-        <img src={banner} alt="Banner promocional" className="mx-auto max-w-full rounded-xl shadow-xl" />
         <button
           onClick={() => navigate("/auth")}
-          className="mt-8 bg-green-500 hover:bg-green-600 transition px-6 py-3 text-lg rounded font-bold text-black"
+          className="mt-6 bg-orange-500 hover:bg-orange-600 transition text-white text-lg font-semibold px-6 py-3 rounded"
         >
-          Começar agora
+          Comece agora
         </button>
-      </section>
+      </div>
 
-      {/* O que é */}
-      <section className="bg-gray-900 py-16 px-6">
-        <div className="max-w-5xl mx-auto text-center">
-          <h3 className="text-3xl font-bold mb-6 text-purple-300">O que é o Mage Token?</h3>
-          <p className="text-gray-300 text-lg">
-            Mage Token é uma plataforma web para automação indetectável de mensagens, com foco total em performance, segurança e escalabilidade. Ideal para campanhas, afiliados e gestores de tráfego.
+      {/* 🔲 BLOCO DE RECURSOS */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-14 max-w-6xl w-full z-10">
+        {/* Cadastro/Login */}
+        <div className="bg-[#2d2d3a] p-6 rounded-lg shadow-md">
+          <h2 className="text-xl font-bold mb-4">Cadastro/Login</h2>
+          <input
+            type="email"
+            placeholder="Email"
+            className="w-full mb-3 p-2 rounded bg-gray-800 text-white placeholder-gray-400"
+          />
+          <input
+            type="password"
+            placeholder="Senha"
+            className="w-full mb-4 p-2 rounded bg-gray-800 text-white placeholder-gray-400"
+          />
+          <button className="bg-orange-500 w-full py-2 rounded hover:bg-orange-600 font-semibold">
+            Registrar
+          </button>
+          <p className="text-sm mt-3 text-center text-gray-400">
+            Já tem uma conta? Faça login
           </p>
         </div>
-      </section>
 
-      {/* Funcionalidades */}
-      <section id="features" className="py-20 px-6 max-w-6xl mx-auto grid md:grid-cols-3 gap-10 text-center">
-        {[
-          ["💬 Multiplataforma", "Telegram, WhatsApp, Discord, Facebook e X."],
-          ["🛡️ Anti-spam avançado", "Simulação de digitação, delays randômicos, múltiplas contas."],
-          ["📈 Painel Profissional", "Estatísticas, logs, controle de mensagens e exportação."],
-        ].map(([icon, title, desc], i) => (
-          <div key={i} className="bg-gray-800 rounded-lg p-8 shadow hover:shadow-lg transition">
-            <div className="text-4xl mb-4">{icon}</div>
-            <h4 className="text-xl font-bold mb-2 text-purple-300">{title}</h4>
-            <p className="text-gray-400">{desc}</p>
-          </div>
-        ))}
-      </section>
-
-      {/* Planos */}
-      <section id="planos" className="bg-gray-950 py-20 px-6">
-        <h3 className="text-center text-3xl font-bold mb-12 text-green-400">Planos disponíveis</h3>
-        <div className="max-w-4xl mx-auto grid md:grid-cols-3 gap-8">
-          {[
-            ["Starter", "1 conta / 300 msg/dia", "R$49/mês"],
-            ["Pro", "3 contas / 1000 msg/dia", "R$149/mês"],
-            ["Agency", "10 contas / 5.000 msg/dia", "R$399/mês"],
-          ].map(([name, desc, price], i) => (
-            <div key={i} className="bg-gray-800 rounded-lg p-6 text-center border border-purple-700 hover:scale-105 transition">
-              <h4 className="text-2xl font-bold mb-2">{name}</h4>
-              <p className="text-gray-300 mb-4">{desc}</p>
-              <p className="text-green-400 text-xl font-semibold">{price}</p>
-            </div>
-          ))}
+        {/* Recursos */}
+        <div className="bg-[#2d2d3a] p-6 rounded-lg shadow-md text-center">
+          <h2 className="text-xl font-bold mb-4">Recursos</h2>
+          <img src={telegramIcon} alt="Telegram" className="w-14 h-14 mx-auto mb-3" />
+          <p className="font-semibold text-blue-400 mb-2">Envio para Telegram</p>
+          <ul className="text-sm text-gray-300 space-y-1">
+            <li>• Mensagens automáticas</li>
+            <li>• Integrações fáceis</li>
+            <li>• Relatórios detalhados</li>
+          </ul>
         </div>
-      </section>
+
+        {/* Planos */}
+        <div className="bg-[#2d2d3a] p-6 rounded-lg shadow-md text-center">
+          <h2 className="text-xl font-bold mb-4">Planos</h2>
+          <p className="text-4xl font-extrabold text-orange-400 mb-2">R$ 29</p>
+          <p className="text-sm text-gray-300 mb-2">/mês</p>
+          <ul className="text-sm text-gray-300 space-y-1">
+            <li>• Acesso a todas as funcionalidades</li>
+            <li>• Suporte 24/7</li>
+          </ul>
+        </div>
+      </div>
 
       {/* Rodapé */}
-      <footer className="text-center py-6 border-t border-gray-800 text-gray-500 text-sm">
+      <footer className="text-gray-500 text-sm text-center mt-16 z-10">
         © {new Date().getFullYear()} Mage Token. Todos os direitos reservados.
       </footer>
-
-      <FloatingCTA />
     </div>
   );
 }
