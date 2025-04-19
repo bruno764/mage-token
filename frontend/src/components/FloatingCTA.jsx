@@ -7,9 +7,9 @@ export default function FloatingCTA() {
   return (
     <button
       onClick={() => navigate("/auth")}
-      className="fixed bottom-6 right-6 bg-green-500 hover:bg-green-600 text-black font-bold py-3 px-6 rounded-full shadow-lg transition z-50"
+      className="fixed bottom-6 right-6 bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 px-6 rounded-full shadow-lg transition-all duration-300 ease-in-out z-50 text-sm md:text-base"
     >
-      💬 Comece Agora
+      🔥 Comece Agora
     </button>
   );
 }
