@@ -2,8 +2,8 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import Landing from "./pages/Landing";
-import Auth from "./pages/Auth"; // Login/Register real
-import Home from "./pages/Home"; // Dashboard após login
+import Auth from "./pages/Auth";
+import Home from "./pages/Home"; // Agora o painel principal
 
 function PrivateRoute({ children }) {
   const { user } = useAuth();
