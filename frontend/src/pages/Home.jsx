@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { auth, db } from "../firebase/firebase";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { useNavigate } from "react-router-dom";
+import { onAuthStateChanged } from "firebase/auth";
 
 export default function Home() {
   const [userData, setUserData] = useState(null);
@@ -9,28 +10,31 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
-  const fetchUserData = async () => {
-    try {
-      const user = auth.currentUser;
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (!user) {
         navigate("/auth");
         return;
       }
 
-      const userRef = doc(db, "users", user.uid);
-      const docSnap = await getDoc(userRef);
+      try {
+        const userRef = doc(db, "users", user.uid);
+        const docSnap = await getDoc(userRef);
 
-      if (docSnap.exists()) {
-        setUserData(docSnap.data());
-      } else {
-        console.warn("Usuário não encontrado no Firestore.");
+        if (docSnap.exists()) {
+          setUserData(docSnap.data());
+        } else {
+          console.warn("Usuário não encontrado no Firestore.");
+        }
+      } catch (err) {
+        console.error("Erro ao buscar dados:", err);
+      } finally {
+        setLoading(false);
       }
-    } catch (err) {
-      console.error("Erro ao buscar dados:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
+    });
+
+    return () => unsubscribe();
+  }, [navigate]);
 
   const handleUpgrade = async () => {
     try {
@@ -77,7 +81,6 @@ export default function Home() {
         return (
           <div>
             <h3 className="text-2xl font-bold mb-4">💳 Upgrade de Plano</h3>
-
             {userData?.isPremium ? (
               <div className="text-green-400">
                 Você já é um membro <strong>Premium</strong>! <br />
@@ -111,7 +114,6 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-black to-gray-900 text-white flex font-sans">
-
       {/* Sidebar */}
       <div className="w-64 bg-[#1c152b] p-6 space-y-4 shadow-xl">
         <h2 className="text-xl font-bold mb-6">📡 Plataformas</h2>
