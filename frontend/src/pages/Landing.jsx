@@ -7,44 +7,48 @@ export default function Landing() {
   const navigate = useNavigate();
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#140c24] to-[#1a132b] text-white px-4 py-10 relative font-sans overflow-hidden">
+    <div className="relative min-h-screen bg-[#0f0a1a] text-white px-4 py-10 overflow-hidden font-sans">
+
+      {/* 🔮 FUNDO COM BRILHO */}
+      <div className="absolute inset-0 bg-gradient-radial from-purple-800/20 via-transparent to-transparent animate-pulse z-0" />
+
       {/* 🔮 MASCOTE DIREITA */}
       <img
         src={wizard}
         alt="Mascote"
-        className="absolute bottom-0 right-0 w-[420px] md:w-[500px] opacity-90 pointer-events-none select-none"
+        className="absolute bottom-0 right-0 w-[380px] md:w-[460px] xl:w-[500px] pointer-events-none select-none z-10"
       />
 
-      {/* 🔠 TÍTULO CENTRAL */}
-      <div className="max-w-5xl mx-auto z-10 relative">
+      {/* TÍTULO & SUBTÍTULO */}
+      <div className="max-w-6xl mx-auto z-20 relative text-left md:text-left">
         <h1 className="text-5xl md:text-6xl font-extrabold mb-4">Mage Token</h1>
-        <p className="text-xl md:text-2xl text-gray-300 max-w-2xl">
-          Automatize suas mensagens nas principais plataformas: Telegram, WhatsApp, Facebook, Discord e X!
+        <p className="text-lg md:text-xl text-gray-300 max-w-2xl">
+          Plataforma completa para automação de mensagens no Telegram, WhatsApp, Facebook, Discord e X.
         </p>
 
-        {/* 🔘 CTA */}
+        {/* CTA */}
         <button
           onClick={() => navigate("/auth")}
-          className="mt-6 bg-orange-500 hover:bg-orange-600 text-white font-bold px-6 py-3 text-lg rounded shadow-lg transition"
+          className="mt-6 bg-orange-500 hover:bg-orange-600 text-white font-semibold px-6 py-3 text-lg rounded-full shadow-md transition"
         >
           Comece agora
         </button>
       </div>
 
-      {/* 🔳 BLOCOS DE CONTEÚDO */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-14 max-w-6xl mx-auto z-10 relative">
-        {/* Login */}
-        <div className="bg-[#2a223d] p-6 rounded-xl shadow text-left">
+      {/* 🔳 BLOCO DE PAINÉIS */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-16 max-w-6xl mx-auto relative z-20">
+        {/* LOGIN */}
+        <div className="bg-[#1c152b] p-6 rounded-2xl shadow-lg">
           <h2 className="text-xl font-bold mb-4">Cadastro/Login</h2>
           <input
             type="email"
             placeholder="Email"
-            className="w-full mb-3 p-3 rounded bg-gray-800 text-white placeholder-gray-400"
+            className="w-full mb-3 p-3 rounded bg-gray-800 text-white placeholder-gray-400 focus:outline-none"
           />
           <input
             type="password"
             placeholder="Senha"
-            className="w-full mb-4 p-3 rounded bg-gray-800 text-white placeholder-gray-400"
+            className="w-full mb-4 p-3 rounded bg-gray-800 text-white placeholder-gray-400 focus:outline-none"
           />
           <button className="bg-orange-500 hover:bg-orange-600 text-white py-2 w-full rounded font-bold">
             Registrar
@@ -54,35 +58,43 @@ export default function Landing() {
           </p>
         </div>
 
-        {/* Recursos */}
-        <div className="bg-[#2a223d] p-6 rounded-xl shadow text-center">
+        {/* RECURSOS */}
+        <div className="bg-[#1c152b] p-6 rounded-2xl shadow-lg text-center">
           <h2 className="text-xl font-bold mb-4">Recursos</h2>
           <img src={telegramIcon} alt="Telegram" className="w-12 h-12 mx-auto mb-2" />
-          <p className="font-semibold text-blue-400 mb-3">Envio multicanal</p>
+          <p className="font-semibold text-blue-400 mb-3">Automação Multiplataforma</p>
           <ul className="text-sm text-gray-300 space-y-1 text-left">
-            <li>• Envio para Telegram, WhatsApp, X, Discord, Facebook</li>
-            <li>• Múltiplas contas e rotação</li>
-            <li>• Relatórios e estatísticas</li>
+            <li>• Envio para Telegram, WhatsApp, Facebook, X e Discord</li>
+            <li>• Filtros inteligentes e rotação de contas</li>
+            <li>• Relatórios e estatísticas completas</li>
           </ul>
         </div>
 
-        {/* Planos */}
-        <div className="bg-[#2a223d] p-6 rounded-xl shadow text-center">
+        {/* PLANOS */}
+        <div className="bg-[#1c152b] p-6 rounded-2xl shadow-lg text-center">
           <h2 className="text-xl font-bold mb-4">Planos</h2>
           <p className="text-4xl font-extrabold text-orange-400 mb-1">R$ 29</p>
-          <p className="text-gray-300 text-sm mb-3">/mês</p>
+          <p className="text-gray-300 text-sm mb-3">por mês</p>
           <ul className="text-sm text-gray-300 space-y-1">
-            <li>• Acesso total a todos os recursos</li>
-            <li>• Atualizações automáticas</li>
-            <li>• Suporte premium 24/7</li>
+            <li>• Acesso total a todas as funções</li>
+            <li>• Atualizações inclusas</li>
+            <li>• Suporte técnico 24/7</li>
           </ul>
         </div>
       </div>
 
-      {/* Rodapé */}
-      <footer className="text-center text-sm text-gray-500 mt-14 z-10 relative">
+      {/* RODAPÉ */}
+      <footer className="text-center text-sm text-gray-500 mt-16 relative z-20">
         © {new Date().getFullYear()} Mage Token. Todos os direitos reservados.
       </footer>
+
+      {/* FLOATING CTA */}
+      <button
+        onClick={() => navigate("/auth")}
+        className="fixed bottom-6 right-6 bg-green-500 hover:bg-green-600 text-black font-bold py-3 px-6 rounded-full shadow-xl transition z-50"
+      >
+        💬 Comece Agora
+      </button>
     </div>
   );
 }
