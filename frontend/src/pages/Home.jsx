@@ -1,3 +1,4 @@
+// 🔧 Home.jsx (completo e atualizado)
 import React, { useEffect, useState, useRef } from "react";
 import { auth, db } from "../firebase/firebase";
 import { doc, getDoc, setDoc } from "firebase/firestore";
@@ -86,8 +87,13 @@ export default function Home() {
     const result = await res.json();
     const fetched = result.contacts || [];
     setContacts(fetched);
-    setSelectedContacts(fetched.map(c => c.username || c.phone).filter(Boolean));
+    setSelectedContacts([]); // desmarca tudo ao carregar
     alert("📋 Lista de contatos carregada.");
+  };
+
+  const handleSelectAll = () => {
+    const all = contacts.map(c => c.username || c.phone).filter(Boolean);
+    setSelectedContacts(all);
   };
 
   const handleBroadcast = async () => {
@@ -182,6 +188,9 @@ export default function Home() {
             <div className="flex gap-2">
               <button onClick={handleCheckSession} className="bg-purple-500 px-4 py-2 rounded text-white font-bold">🔍 Verificar Sessão</button>
               <button onClick={handleListContacts} className="bg-cyan-600 px-4 py-2 rounded text-white font-bold">📇 Listar Contatos</button>
+              {contacts.length > 0 && (
+                <button onClick={handleSelectAll} className="bg-blue-600 px-4 py-2 rounded text-white font-bold">✔️ Selecionar Todos</button>
+              )}
             </div>
 
             {contacts.length > 0 && (
@@ -272,7 +281,8 @@ export default function Home() {
             )}
           </div>
         );
-      default: return <div>Selecione uma plataforma.</div>;
+      default:
+        return <div>Selecione uma plataforma.</div>;
     }
   };
 
