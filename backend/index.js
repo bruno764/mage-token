@@ -1,9 +1,9 @@
-// index.js
+// backend/index.js
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import admin from "firebase-admin";
-import { startTelegramBot } from "./telegrambot.js";
+import "./telegrambot.js"; // ← inicia o bot automaticamente
 
 dotenv.config();
 
@@ -11,15 +11,13 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Conecta com o Firebase Admin usando o JSON do .env
+// Firebase Admin Init
 const credentials = JSON.parse(process.env.FIREBASE_CREDENTIALS_JSON);
-
 if (!admin.apps.length) {
   admin.initializeApp({
     credential: admin.credential.cert(credentials),
   });
 }
-
 const db = admin.firestore();
 
 // 🔹 Teste de rota
@@ -45,10 +43,7 @@ app.get("/api/user/:uid", async (req, res) => {
   }
 });
 
-// 🔹 Inicia o bot do Telegram
-startTelegramBot();
-
-// Inicializa servidor
+// 🔹 Inicia servidor + log
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`🚀 Servidor rodando em http://localhost:${PORT}`);
