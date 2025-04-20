@@ -1,4 +1,5 @@
-telethon
-python-dotenv
 fastapi
 uvicorn
+python-dotenv
+telethon
+python-multipart
