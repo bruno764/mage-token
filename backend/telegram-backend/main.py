@@ -1,4 +1,5 @@
 from fastapi import FastAPI, UploadFile, File, Form
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from telethon.sync import TelegramClient
 from telethon.tl.functions.contacts import GetContactsRequest
@@ -12,6 +13,15 @@ API_ID = int(os.getenv("API_ID"))
 API_HASH = os.getenv("API_HASH")
 
 app = FastAPI()
+
+# Middleware de CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Você pode restringir depois para ["https://seusite.vercel.app"]
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 SESSION_DIR = "sessions"
 TEMP_DIR = "temp"
@@ -111,7 +121,7 @@ async def list_contacts(data: PhoneNumber):
 async def send_broadcast(
     phone: str = Form(...),
     message: str = Form(...),
-    recipients: str = Form(...),  # string separada por vírgulas
+    recipients: str = Form(...),  # separados por vírgula
     file: UploadFile = File(None)
 ):
     try:

@@ -4,6 +4,8 @@ import { doc, getDoc, setDoc } from "firebase/firestore";
 import { useNavigate } from "react-router-dom";
 import { onAuthStateChanged } from "firebase/auth";
 
+const API_URL = "https://mage-token-production.up.railway.app";
+
 export default function Home() {
   const [userData, setUserData] = useState(null);
   const [activeTab, setActiveTab] = useState("telegram");
@@ -66,7 +68,7 @@ export default function Home() {
 
   const handleCheckSession = async () => {
     const phone = telegramTokenRef.current.value;
-    const res = await fetch("https://mage-token-backend-production.up.railway.app/check-session", {
+    const res = await fetch(`${API_URL}/check-session`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ phone }),
@@ -77,7 +79,7 @@ export default function Home() {
 
   const handleListContacts = async () => {
     const phone = telegramTokenRef.current.value;
-    const res = await fetch("https://mage-token-backend-production.up.railway.app/list-contacts", {
+    const res = await fetch(`${API_URL}/list-contacts`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ phone }),
@@ -104,7 +106,7 @@ export default function Home() {
     formData.append("recipients", recipientList);
     if (file) formData.append("file", file);
 
-    const res = await fetch("https://mage-token-backend-production.up.railway.app/send-broadcast", {
+    const res = await fetch(`${API_URL}/send-broadcast`, {
       method: "POST",
       body: formData,
     });
@@ -172,7 +174,7 @@ export default function Home() {
             {userData?.isPremium ? (
               <div className="text-green-400">
                 Você já é um membro <strong>Premium</strong>! <br />
-                Validade: {" "}
+                Validade:{" "}
                 <span className="text-white font-semibold">
                   {new Date(userData.validUntil).toLocaleDateString()}
                 </span>
