@@ -189,8 +189,23 @@ export default function Home() {
               <button onClick={handleCheckSession} className="bg-purple-500 px-4 py-2 rounded text-white font-bold">🔍 Verificar Sessão</button>
               <button onClick={handleListContacts} className="bg-cyan-600 px-4 py-2 rounded text-white font-bold">📇 Listar Contatos</button>
               {contacts.length > 0 && (
-                <button onClick={handleSelectAll} className="bg-blue-600 px-4 py-2 rounded text-white font-bold">✔️ Selecionar Todos</button>
-              )}
+  <button
+    onClick={() => {
+      const all = contacts.map(c => c.username || c.phone).filter(Boolean);
+      if (selectedContacts.length === all.length) {
+        setSelectedContacts([]); // Desseleciona todos
+      } else {
+        setSelectedContacts(all); // Seleciona todos
+      }
+    }}
+    className="bg-blue-600 px-4 py-2 rounded text-white font-bold"
+  >
+    {selectedContacts.length === contacts.filter(c => c.username || c.phone).length
+      ? "❌ Desselecionar Todos"
+      : "✔️ Selecionar Todos"}
+  </button>
+)}
+
             </div>
 
             {contacts.length > 0 && (
