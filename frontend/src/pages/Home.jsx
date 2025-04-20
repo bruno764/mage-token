@@ -84,12 +84,23 @@ export default function Home() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ phone }),
     });
+  
     const result = await res.json();
     const fetched = result.contacts || [];
-    setContacts(fetched);
+  
+    // Separar contatos individuais e grupos
+    const onlyContacts = fetched.filter(c => c.username || c.phone);
+    const onlyGroups = fetched.filter(c => c.title); // 'title' indica grupo
+  
+    setContacts({
+      users: onlyContacts,
+      groups: onlyGroups,
+    });
+  
     setSelectedContacts([]); // desmarca tudo ao carregar
-    alert("📋 Lista de contatos carregada.");
+    alert("📋 Lista de contatos e grupos carregada.");
   };
+  
 
   const handleSelectAll = () => {
     const all = contacts.map(c => c.username || c.phone).filter(Boolean);
@@ -208,31 +219,58 @@ export default function Home() {
 
             </div>
 
-            {contacts.length > 0 && (
-              <div className="max-h-48 overflow-y-scroll border border-gray-700 rounded p-2 bg-gray-900">
-                {contacts.map((c, i) => {
-                  const key = c.username || c.phone || i;
-                  const label = `${c.first_name || ""} ${c.last_name || ""} ${c.username || c.phone}`;
-                  return (
-                    <label key={key} className="flex items-center gap-2 text-white text-sm mb-1">
-                      <input
-                        type="checkbox"
-                        checked={selectedContacts.includes(c.username || c.phone)}
-                        onChange={(e) => {
-                          const value = c.username || c.phone;
-                          if (e.target.checked) {
-                            setSelectedContacts((prev) => [...prev, value]);
-                          } else {
-                            setSelectedContacts((prev) => prev.filter((v) => v !== value));
-                          }
-                        }}
-                      />
-                      <span>{label}</span>
-                    </label>
-                  );
-                })}
-              </div>
-            )}
+            {contacts.users?.length > 0 && (
+  <div className="max-h-48 overflow-y-scroll border border-gray-700 rounded p-2 bg-gray-900 mb-4">
+    <h4 className="text-white text-lg font-bold mb-2">👤 Contatos</h4>
+    {contacts.users.map((c, i) => {
+      const key = c.username || c.phone || i;
+      const label = `${c.first_name || ""} ${c.last_name || ""} ${c.username || c.phone}`;
+      return (
+        <label key={key} className="flex items-center gap-2 text-white text-sm mb-1">
+          <input
+            type="checkbox"
+            checked={selectedContacts.includes(c.username || c.phone)}
+            onChange={(e) => {
+              const value = c.username || c.phone;
+              if (e.target.checked) {
+                setSelectedContacts((prev) => [...prev, value]);
+              } else {
+                setSelectedContacts((prev) => prev.filter((v) => v !== value));
+              }
+            }}
+          />
+          <span>{label}</span>
+        </label>
+      );
+    })}
+  </div>
+)}
+
+{contacts.groups?.length > 0 && (
+  <div className="max-h-48 overflow-y-scroll border border-yellow-700 rounded p-2 bg-gray-900">
+    <h4 className="text-yellow-400 text-lg font-bold mb-2">👥 Grupos</h4>
+    {contacts.groups.map((g, i) => {
+      const key = g.id || i;
+      const label = g.title;
+      return (
+        <label key={key} className="flex items-center gap-2 text-yellow-300 text-sm mb-1">
+          <input
+            type="checkbox"
+            checked={selectedContacts.includes(g.id)}
+            onChange={(e) => {
+              if (e.target.checked) {
+                setSelectedContacts((prev) => [...prev, g.id]);
+              } else {
+                setSelectedContacts((prev) => prev.filter((v) => v !== g.id));
+              }
+            }}
+          />
+          <span>{label}</span>
+        </label>
+      );
+    })}
+  </div>
+)}
 
             <div>
               <h4 className="text-lg font-semibold mb-1">📄 Números externos (um por linha)</h4>
