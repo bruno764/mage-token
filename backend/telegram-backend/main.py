@@ -4,7 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from telethon.sync import TelegramClient
 from telethon.tl.functions.contacts import GetContactsRequest
-from telethon.tl.types import User, Chat, Channel  # import dos tipos
+from telethon.tl.types import User, Chat, Channel
 import os
 import shutil
 from dotenv import load_dotenv
@@ -104,42 +104,35 @@ async def list_contacts(data: PhoneNumber):
     except Exception as e:
         return {"error": str(e)}
 
-# ————— Novo endpoint —————
 @app.post("/list-dialogs")
 async def list_dialogs(data: PhoneNumber):
     try:
         client = TelegramClient(f"{SESSION_DIR}/{data.phone}", API_ID, API_HASH)
         await client.connect()
 
-        # busca todos os diálogos
         dialogs = await client.get_dialogs()
-
         resultado = []
         for dlg in dialogs:
             ent = dlg.entity
-            # só grupos, supergrupos e canais
-            if isinstance(ent, (Chat, Channel)) and not isinstance(ent, User):
-                # determina tipo
-                if getattr(ent, 'broadcast', False):
+            if isinstance(ent, (Chat, Channel)):
+                if getattr(ent, "broadcast", False):
                     tipo = "channel"
-                elif getattr(ent, 'megagroup', False):
+                elif getattr(ent, "megagroup", False):
                     tipo = "supergroup"
                 else:
                     tipo = "group"
                 resultado.append({
                     "chat": {
                         "id": ent.id,
-                        "title": getattr(ent, 'title', None),
+                        "title": getattr(ent, "title", None),
                         "type": tipo
                     }
                 })
 
         await client.disconnect()
         return {"dialogs": resultado}
-
     except Exception as e:
         return {"error": str(e)}
-# ————————————————————
 
 @app.post("/send")
 async def send_message(
@@ -152,14 +145,16 @@ async def send_message(
         client = TelegramClient(f"{SESSION_DIR}/{phone}", API_ID, API_HASH)
         await client.connect()
 
+        entity = await client.get_entity(recipient)
+
         if file:
             file_path = f"{TEMP_DIR}/{file.filename}"
             with open(file_path, "wb") as buffer:
                 shutil.copyfileobj(file.file, buffer)
-            await client.send_file(recipient, file_path, caption=message)
+            await client.send_file(entity, file_path, caption=message)
             os.remove(file_path)
         else:
-            await client.send_message(recipient, message)
+            await client.send_message(entity, message)
 
         await client.disconnect()
         return {"status": f"Mensagem enviada para {recipient} ✅"}
@@ -187,12 +182,13 @@ async def send_broadcast(
 
         for recipient in recipients_list:
             try:
+                entity = await client.get_entity(recipient)
                 if file_path:
-                    await client.send_file(recipient, file_path, caption=message)
+                    await client.send_file(entity, file_path, caption=message)
                 else:
-                    await client.send_message(recipient, message)
+                    await client.send_message(entity, message)
             except Exception as err:
-                print(f"Erro envio para {recipient}: {err}")
+                print(f"❌ Erro para {recipient}: {err}")
 
         if file_path:
             os.remove(file_path)
