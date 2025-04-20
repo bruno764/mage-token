@@ -230,7 +230,7 @@ export default function Home() {
               </button>
             </div>
 
-            {/* NOVOS: Botões de selecionar/desselecionar separados */}
+            {/* ADICIONADOS: botões separados */}
             <div className="flex gap-2 flex-wrap">
               {contacts.users.length > 0 && (
                 <button
@@ -268,7 +268,6 @@ export default function Home() {
               )}
             </div>
 
-            {/* Botão combinado, mantido */}
             <div className="flex gap-2 flex-wrap">
               {(contacts.users.length + contacts.groups.length) > 0 && (
                 <button
@@ -297,10 +296,7 @@ export default function Home() {
                 {contacts.users.map((c, i) => {
                   const id = c.username || c.phone;
                   return (
-                    <label
-                      key={i}
-                      className="flex items-center gap-2 text-white text-sm mb-1"
-                    >
+                    <label key={i} className="flex items-center gap-2 text-white text-sm mb-1">
                       <input
                         type="checkbox"
                         checked={selectedContacts.includes(id)}
@@ -310,9 +306,7 @@ export default function Home() {
                             : setSelectedContacts(prev => prev.filter(v => v !== id))
                         }
                       />
-                      <span>
-                        {c.first_name} {c.last_name || ""} ({id})
-                      </span>
+                      <span>{c.first_name} {c.last_name || ""} ({id})</span>
                     </label>
                   );
                 })}
@@ -325,10 +319,7 @@ export default function Home() {
                   const gid = g.chat.id;
                   const title = g.chat.title;
                   return (
-                    <label
-                      key={i}
-                      className="flex items-center gap-2 text-yellow-300 text-sm mb-1"
-                    >
+                    <label key={i} className="flex items-center gap-2 text-yellow-300 text-sm mb-1">
                       <input
                         type="checkbox"
                         checked={selectedContacts.includes(gid)}
@@ -362,11 +353,7 @@ export default function Home() {
               className="w-full p-3 bg-gray-800 rounded text-white"
             />
 
-            <input
-              ref={fileRef}
-              type="file"
-              className="w-full p-2 bg-gray-800 rounded"
-            />
+            <input ref={fileRef} type="file" className="w-full p-2 bg-gray-800 rounded" />
 
             <button
               onClick={handleBroadcast}
@@ -376,13 +363,18 @@ export default function Home() {
             </button>
           </div>
         );
-      // ... os outros cases ficam exatamente iguais ao seu código atual
-      case "whatsapp": return <div>📱 Integração com WhatsApp</div>;
-      case "facebook": return <div>📘 Facebook Sender</div>;
-      case "discord": return <div>🎮 Bot para Discord</div>;
-      case "x": return <div>🐦 Auto Reply / Auto DM no X</div>;
-      case "estatisticas": return <div>📊 Estatísticas e Relatórios</div>;
-      case "historico": return <div>🕓 Histórico de Campanhas</div>;
+      case "whatsapp":
+        return <div>📱 Integração com WhatsApp</div>;
+      case "facebook":
+        return <div>📘 Facebook Sender</div>;
+      case "discord":
+        return <div>🎮 Bot para Discord</div>;
+      case "x":
+        return <div>🐦 Auto Reply / Auto DM no X</div>;
+      case "estatisticas":
+        return <div>📊 Estatísticas e Relatórios</div>;
+      case "historico":
+        return <div>🕓 Histórico de Campanhas</div>;
       case "upgrade":
         return (
           <div>
@@ -419,8 +411,63 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-black to-gray-900 text-white flex font-sans">
-      {/* Sua barra lateral e header continuam iguais */}
-      {renderTabContent()}
+      <div className="w-64 bg-[#1c152b] p-6 space-y-4 shadow-xl">
+        <h2 className="text-xl font-bold mb-6">📡 Plataformas</h2>
+        <button onClick={() => setActiveTab("telegram")} className="w-full bg-gray-800 hover:bg-purple-700 py-2 rounded">
+          Telegram
+        </button>
+        <button onClick={() => setActiveTab("whatsapp")} className="w-full bg-gray-800 hover:bg-green-600 py-2 rounded">
+          WhatsApp
+        </button>
+        <button onClick={() => setActiveTab("facebook")} className="w-full bg-gray-800 hover:bg-blue-600 py-2 rounded">
+          Facebook
+        </button>
+        <button onClick={() => setActiveTab("discord")} className="w-full bg-gray-800 hover:bg-indigo-600 py-2 rounded">
+          Discord
+        </button>
+        <button onClick={() => setActiveTab("x")} className="w-full bg-gray-800 hover:bg-sky-600 py-2 rounded">
+          X (Twitter)
+        </button>
+        <hr className="my-4 border-gray-600" />
+        <button onClick={() => setActiveTab("estatisticas")} className="w-full bg-gray-800 hover:bg-cyan-600 py-2 rounded">
+          📊 Estatísticas
+        </button>
+        <button onClick={() => setActiveTab("historico")} className="w-full bg-gray-800 hover:bg-orange-600 py-2 rounded">
+          📜 Histórico
+        </button>
+        <button onClick={() => setActiveTab("upgrade")} className="w-full bg-yellow-600 hover:bg-yellow-700 py-2 rounded">
+          💳 Upgrade de Plano
+        </button>
+        <button
+          onClick={() => { auth.signOut(); navigate("/auth"); }}
+          className="w-full mt-8 bg-red-600 hover:bg-red-700 py-2 rounded font-bold text-white"
+        >
+          Sair
+        </button>
+      </div>
+
+      <div className="flex-1 p-8">
+        <div className="bg-[#1c152b] p-6 rounded-xl mb-6 shadow-lg">
+          <h1 className="text-3xl font-bold mb-2">👤 Bem-vindo</h1>
+          {userData ? (
+            <>
+              <p><span className="font-bold">Email:</span> {userData.email}</p>
+              <p><span className="font-bold">Plano:</span> {userData.isPremium ? "Premium" : "Grátis"}</p>
+              <p><span className="font-bold">Criado em:</span> {new Date(userData.createdAt).toLocaleString()}</p>
+              {userData.isPremium && userData.validUntil && (
+                <p><span className="font-bold">Válido até:</span> {new Date(userData.validUntil).toLocaleDateString()}</p>
+              )}
+            </>
+          ) : (
+            <p className="text-gray-400">Dados não encontrados.</p>
+          )}
+        </div>
+
+        <div className="bg-[#1a1a2e] p-6 rounded-xl shadow-md min-h-[300px]">
+          <h2 className="text-xl font-bold mb-4">🔧 Área de Controle</h2>
+          {renderTabContent()}
+        </div>
+      </div>
     </div>
   );
 }
