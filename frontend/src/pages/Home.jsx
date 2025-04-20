@@ -88,8 +88,8 @@ export default function Home() {
     const result = await res.json();
     const fetched = result.contacts || [];
 
-    const onlyContacts = fetched.filter(c => c.username || c.phone);
-    const onlyGroups = fetched.filter(c => c.title);
+    const onlyContacts = fetched.filter((c) => c.username || c.phone);
+    const onlyGroups   = fetched.filter((c) => c.title);
 
     setContacts({
       users: onlyContacts,
@@ -100,22 +100,32 @@ export default function Home() {
     alert("📋 Lista de contatos e grupos carregada.");
   };
 
+  // === Apenas esta função foi ajustada ===
   const handleSelectAll = () => {
-    const allUsers = contacts.users?.map((c) => c.username || c.phone) || [];
-    const allGroups = contacts.groups?.map((g) => g.id) || [];
+    const allUsers  = contacts.users.map((c) => c.username || c.phone);
+    const allGroups = contacts.groups.map((g) => g.id);
     setSelectedContacts([...allUsers, ...allGroups]);
   };
+  // ======================================
 
   const handleBroadcast = async () => {
     const phone = telegramTokenRef.current.value;
     const message = messageRef.current.value;
     const file = fileRef.current.files[0];
-    const manualNumbers = manualNumbersRef.current?.value?.split("\n").map(n => n.trim()).filter(n => n) || [];
+    const manualNumbers =
+      manualNumbersRef.current?.value
+        .split("\n")
+        .map((n) => n.trim())
+        .filter((n) => n) || [];
 
-    if (!message || !phone) return alert("⚠️ Número, mensagem e contatos obrigatórios.");
+    if (!message || !phone)
+      return alert("⚠️ Número, mensagem e contatos obrigatórios.");
 
-    const allRecipients = [...selectedContacts, ...manualNumbers].filter(Boolean);
-    if (allRecipients.length === 0) return alert("⚠️ Nenhum destinatário válido encontrado.");
+    const allRecipients = [...selectedContacts, ...manualNumbers].filter(
+      Boolean
+    );
+    if (allRecipients.length === 0)
+      return alert("⚠️ Nenhum destinatário válido encontrado.");
 
     const formData = new FormData();
     formData.append("phone", phone);
@@ -193,30 +203,40 @@ export default function Home() {
               ✅ Confirmar Código
             </button>
 
-            {sessionAuthorized && <div className="text-green-400 font-semibold">🟢 Conectado</div>}
+            {sessionAuthorized && (
+              <div className="text-green-400 font-semibold">🟢 Conectado</div>
+            )}
 
             <div className="flex gap-2 flex-wrap">
-              <button onClick={handleCheckSession} className="bg-purple-500 px-4 py-2 rounded text-white font-bold">🔍 Verificar Sessão</button>
-              <button onClick={handleListContacts} className="bg-cyan-600 px-4 py-2 rounded text-white font-bold">📇 Listar Contatos</button>
-              {(contacts.users.length || contacts.groups.length) > 0 && (
+              <button onClick={handleCheckSession} className="bg-purple-500 px-4 py-2 rounded text-white font-bold">
+                🔍 Verificar Sessão
+              </button>
+              <button onClick={handleListContacts} className="bg-cyan-600 px-4 py-2 rounded text-white font-bold">
+                📇 Listar Contatos
+              </button>
+
+              {/* === Botão corrigido: usa handleSelectAll e limpa quando tudo já está marcado */}
+              {(contacts.users.length + contacts.groups.length) > 0 && (
                 <button
                   onClick={() => {
-                    const allUsers = contacts.users?.map((c) => c.username || c.phone) || [];
-                    const allGroups = contacts.groups?.map((g) => g.id) || [];
-                    const all = [...allUsers, ...allGroups];
-                    if (selectedContacts.length === all.length) {
+                    if (
+                      selectedContacts.length ===
+                      contacts.users.length + contacts.groups.length
+                    ) {
                       setSelectedContacts([]);
                     } else {
-                      setSelectedContacts(all);
+                      handleSelectAll();
                     }
                   }}
                   className="bg-blue-600 px-4 py-2 rounded text-white font-bold"
                 >
-                  {selectedContacts.length === ((contacts.users?.length || 0) + (contacts.groups?.length || 0))
+                  {selectedContacts.length ===
+                  contacts.users.length + contacts.groups.length
                     ? "❌ Desselecionar Todos"
                     : "✔️ Selecionar Todos"}
                 </button>
               )}
+              {/* ============================================= */}
             </div>
 
             {contacts.users?.length > 0 && (
@@ -300,12 +320,18 @@ export default function Home() {
           </div>
         );
 
-      case "whatsapp": return <div>📱 Integração com WhatsApp</div>;
-      case "facebook": return <div>📘 Facebook Sender</div>;
-      case "discord": return <div>🎮 Bot para Discord</div>;
-      case "x": return <div>🐦 Auto Reply / Auto DM no X</div>;
-      case "estatisticas": return <div>📊 Estatísticas e Relatórios</div>;
-      case "historico": return <div>🕓 Histórico de Campanhas</div>;
+      case "whatsapp":
+        return <div>📱 Integração com WhatsApp</div>;
+      case "facebook":
+        return <div>📘 Facebook Sender</div>;
+      case "discord":
+        return <div>🎮 Bot para Discord</div>;
+      case "x":
+        return <div>🐦 Auto Reply / Auto DM no X</div>;
+      case "estatisticas":
+        return <div>📊 Estatísticas e Relatórios</div>;
+      case "historico":
+        return <div>🕓 Histórico de Campanhas</div>;
       case "upgrade":
         return (
           <div>
