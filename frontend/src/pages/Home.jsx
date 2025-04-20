@@ -1,3 +1,4 @@
+// IMPORTS ORIGINAIS
 import React, { useEffect, useState, useRef } from "react";
 import { auth, db } from "../firebase/firebase";
 import { doc, getDoc, setDoc } from "firebase/firestore";
@@ -8,9 +9,12 @@ export default function Home() {
   const [userData, setUserData] = useState(null);
   const [activeTab, setActiveTab] = useState("telegram");
   const [loading, setLoading] = useState(true);
+  const [contacts, setContacts] = useState([]);
   const navigate = useNavigate();
 
   const messageRef = useRef();
+  const typeRef = useRef();
+  const fileRef = useRef();
   const telegramTokenRef = useRef();
 
   useEffect(() => {
@@ -61,6 +65,56 @@ export default function Home() {
     }
   };
 
+  // NOVAS FUNÇÕES
+  const handleCheckSession = async () => {
+    const phone = telegramTokenRef.current.value;
+    const res = await fetch("http://localhost:8000/check-session", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ phone }),
+    });
+    const result = await res.json();
+    alert(result.authorized ? "✅ Sessão ATIVA" : "❌ Sessão INATIVA");
+  };
+
+  const handleListContacts = async () => {
+    const phone = telegramTokenRef.current.value;
+    const res = await fetch("http://localhost:8000/list-contacts", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ phone }),
+    });
+    const result = await res.json();
+    setContacts(result.contacts || []);
+    alert("📋 Lista de contatos carregada.");
+  };
+
+  const handleBroadcast = async () => {
+    const phone = telegramTokenRef.current.value;
+    const message = messageRef.current.value;
+    const file = fileRef.current.files[0];
+
+    if (!contacts.length || !message || !phone) {
+      return alert("⚠️ Número, mensagem e contatos obrigatórios.");
+    }
+
+    const recipientList = contacts.map(c => c.username || c.phone).join(",");
+
+    const formData = new FormData();
+    formData.append("phone", phone);
+    formData.append("message", message);
+    formData.append("recipients", recipientList);
+    if (file) formData.append("file", file);
+
+    const res = await fetch("http://localhost:8000/send-broadcast", {
+      method: "POST",
+      body: formData,
+    });
+
+    const result = await res.json();
+    alert(result.status || result.error);
+  };
+
   const renderTabContent = () => {
     switch (activeTab) {
       case "telegram":
@@ -74,47 +128,14 @@ export default function Home() {
               className="w-full p-3 rounded bg-gray-800 text-white placeholder-gray-400"
             />
 
-            <button
-              onClick={async () => {
-                const phone = telegramTokenRef.current.value;
-                if (!phone) return alert("Digite seu número de telefone.");
-                const res = await fetch("http://localhost:8000/start-login", {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({ phone }),
-                });
-                const result = await res.json();
-                alert(result.status || result.error);
-              }}
-              className="bg-purple-600 hover:bg-purple-700 px-6 py-3 rounded font-bold text-white"
-            >
-              📩 Enviar código para Telegram
-            </button>
-
-            <input
-              type="text"
-              placeholder="Código recebido no Telegram"
-              id="codeInput"
-              className="w-full p-3 rounded bg-gray-800 text-white placeholder-gray-400"
-            />
-
-            <button
-              onClick={async () => {
-                const phone = telegramTokenRef.current.value;
-                const code = document.getElementById("codeInput").value;
-                if (!code) return alert("Digite o código recebido.");
-                const res = await fetch("http://localhost:8000/verify-code", {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({ phone, code }),
-                });
-                const result = await res.json();
-                alert(result.status || result.error);
-              }}
-              className="bg-green-700 hover:bg-green-800 px-6 py-3 rounded font-bold text-white"
-            >
-              ✅ Confirmar Código
-            </button>
+            <div className="flex gap-2">
+              <button onClick={handleCheckSession} className="bg-yellow-500 px-4 py-2 rounded text-white font-bold">
+                🔍 Verificar Sessão
+              </button>
+              <button onClick={handleListContacts} className="bg-cyan-600 px-4 py-2 rounded text-white font-bold">
+                📇 Listar Contatos
+              </button>
+            </div>
 
             <textarea
               ref={messageRef}
@@ -123,25 +144,56 @@ export default function Home() {
               className="w-full p-4 rounded bg-gray-800 text-white placeholder-gray-400 resize-none"
             />
 
-            <button
-              onClick={async () => {
-                const phone = telegramTokenRef.current.value;
-                const message = messageRef.current.value;
-                const recipient = prompt("Digite o @username ou número de quem vai receber:");
+            <input ref={fileRef} type="file" className="w-full p-3 bg-gray-800 text-white rounded" />
 
-                if (!phone || !message || !recipient) return alert("Preencha todos os campos.");
-                const res = await fetch("http://localhost:8000/send", {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({ phone, message, recipient }),
-                });
-                const result = await res.json();
-                alert(result.status || result.error);
-              }}
+            <button
+              onClick={handleBroadcast}
               className="bg-blue-600 hover:bg-blue-700 px-6 py-3 rounded font-bold text-white"
             >
-              🚀 Enviar Mensagem
+              📢 Enviar para todos os contatos
             </button>
+          </div>
+        );
+
+      // Outros tabs continuam iguais
+      case "whatsapp":
+        return <div>📱 Integração com WhatsApp</div>;
+      case "facebook":
+        return <div>📘 Facebook Sender</div>;
+      case "discord":
+        return <div>🎮 Bot para Discord</div>;
+      case "x":
+        return <div>🐦 Auto Reply / Auto DM no X</div>;
+      case "estatisticas":
+        return <div>📊 Estatísticas e Relatórios</div>;
+      case "historico":
+        return <div>🕓 Histórico de Campanhas</div>;
+      case "upgrade":
+        return (
+          <div>
+            <h3 className="text-2xl font-bold mb-4">💳 Upgrade de Plano</h3>
+            {userData?.isPremium ? (
+              <div className="text-green-400">
+                Você já é um membro <strong>Premium</strong>! <br />
+                Validade:{" "}
+                <span className="text-white font-semibold">
+                  {new Date(userData.validUntil).toLocaleDateString()}
+                </span>
+              </div>
+            ) : (
+              <>
+                <p className="text-gray-300 mb-4">
+                  Faça upgrade e tenha acesso a todas as plataformas sem limites,
+                  com suporte prioritário e ferramentas exclusivas.
+                </p>
+                <button
+                  onClick={handleUpgrade}
+                  className="bg-orange-500 hover:bg-orange-600 px-6 py-3 rounded font-bold"
+                >
+                  Ativar Premium (R$ 49/mês)
+                </button>
+              </>
+            )}
           </div>
         );
       default:
@@ -153,11 +205,16 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-black to-gray-900 text-white flex font-sans">
-      {/* Sidebar */}
       <div className="w-64 bg-[#1c152b] p-6 space-y-4 shadow-xl">
         <h2 className="text-xl font-bold mb-6">📡 Plataformas</h2>
         <button onClick={() => setActiveTab("telegram")} className="w-full bg-gray-800 hover:bg-purple-700 py-2 rounded">Telegram</button>
+        <button onClick={() => setActiveTab("whatsapp")} className="w-full bg-gray-800 hover:bg-green-600 py-2 rounded">WhatsApp</button>
+        <button onClick={() => setActiveTab("facebook")} className="w-full bg-gray-800 hover:bg-blue-600 py-2 rounded">Facebook</button>
+        <button onClick={() => setActiveTab("discord")} className="w-full bg-gray-800 hover:bg-indigo-600 py-2 rounded">Discord</button>
+        <button onClick={() => setActiveTab("x")} className="w-full bg-gray-800 hover:bg-sky-600 py-2 rounded">X (Twitter)</button>
         <hr className="my-4 border-gray-600" />
+        <button onClick={() => setActiveTab("estatisticas")} className="w-full bg-gray-800 hover:bg-cyan-600 py-2 rounded">📊 Estatísticas</button>
+        <button onClick={() => setActiveTab("historico")} className="w-full bg-gray-800 hover:bg-orange-600 py-2 rounded">📜 Histórico</button>
         <button onClick={() => setActiveTab("upgrade")} className="w-full bg-yellow-600 hover:bg-yellow-700 py-2 rounded">💳 Upgrade de Plano</button>
         <button
           onClick={() => {
@@ -170,7 +227,6 @@ export default function Home() {
         </button>
       </div>
 
-      {/* Conteúdo Principal */}
       <div className="flex-1 p-8">
         <div className="bg-[#1c152b] p-6 rounded-xl mb-6 shadow-lg">
           <h1 className="text-3xl font-bold mb-2">👤 Bem-vindo</h1>
