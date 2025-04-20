@@ -14,7 +14,7 @@ API_HASH = os.getenv("API_HASH")
 
 app = FastAPI()
 
-# CORS para liberar acesso do frontend (Vercel)
+# Middleware de CORS para liberar frontend do Vercel
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["https://mage-token.vercel.app"],
