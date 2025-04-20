@@ -11,6 +11,7 @@ export default function Home() {
   const [activeTab, setActiveTab] = useState("telegram");
   const [loading, setLoading] = useState(true);
   const [contacts, setContacts] = useState([]);
+  const [sessionAuthorized, setSessionAuthorized] = useState(false);
   const navigate = useNavigate();
 
   const messageRef = useRef();
@@ -74,6 +75,7 @@ export default function Home() {
       body: JSON.stringify({ phone }),
     });
     const result = await res.json();
+    setSessionAuthorized(result.authorized);
     alert(result.authorized ? "✅ Sessão ATIVA" : "❌ Sessão INATIVA");
   };
 
@@ -163,12 +165,21 @@ export default function Home() {
                   body: JSON.stringify({ phone, code }),
                 });
                 const result = await res.json();
-                alert(result.status || result.error);
+                if (result.status) {
+                  alert(result.status);
+                  setSessionAuthorized(true);
+                } else {
+                  alert(result.error);
+                }
               }}
               className="bg-green-600 px-4 py-2 rounded text-white font-bold"
             >
               ✅ Confirmar Código
             </button>
+
+            {sessionAuthorized && (
+              <div className="text-green-400 font-semibold">🟢 Conectado</div>
+            )}
 
             <div className="flex gap-2">
               <button onClick={handleCheckSession} className="bg-purple-500 px-4 py-2 rounded text-white font-bold">
