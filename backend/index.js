@@ -17,6 +17,11 @@ app.use(express.json());
 
 const upload = multer({ dest: "uploads/" });
 
+// Garante que pasta de sessões exista
+if (!fs.existsSync("sessions")) {
+  fs.mkdirSync("sessions");
+}
+
 // Inicializa Firebase
 const credentials = JSON.parse(process.env.FIREBASE_CREDENTIALS_JSON);
 if (!admin.apps.length) {
@@ -24,17 +29,17 @@ if (!admin.apps.length) {
 }
 const db = admin.firestore();
 
-// Inicializa bot global
+// Inicializa bot global (opcional)
 const bot = new Telegraf(process.env.BOT_TOKEN);
 bot.launch();
 console.log("🤖 Bot do Telegram iniciado com sucesso!");
 
-// Teste
+// Teste de rota
 app.get("/", (_, res) => {
   res.send("🔥 Backend Mage Token funcionando!");
 });
 
-// Rota de envio rápido via bot direto
+// Envio direto via bot (opcional)
 app.post("/api/send-telegram-direct", upload.single("file"), async (req, res) => {
   const { message, userId } = req.body;
   const file = req.file;
@@ -57,10 +62,10 @@ app.post("/api/send-telegram-direct", upload.single("file"), async (req, res) =>
   }
 });
 
-// Usa rotas do Telegram
+// Usa rotas principais do Telegram
 app.use("/api", telegramRoutes);
 
-// Start
+// Inicia servidor
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`🚀 Servidor rodando em http://localhost:${PORT}`);
