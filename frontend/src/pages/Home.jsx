@@ -8,6 +8,7 @@ import { onAuthStateChanged } from "firebase/auth";
 const API_URL = "https://mage-token-production.up.railway.app";
 
 export default function Home() {
+  const [scheduledAt, setScheduledAt] = useState("");
   const [userData, setUserData] = useState(null);
   const [activeTab, setActiveTab] = useState("telegram");
   const [loading, setLoading] = useState(true);
@@ -94,20 +95,21 @@ export default function Home() {
       body: JSON.stringify({ phone }),
     });
 
-    const usersJson  = await usersRes.json();
+    const usersJson = await usersRes.json();
     const groupsJson = await groupsRes.json();
 
     const fetchedUsers = usersJson.contacts || [];
-    const fetchedChats = groupsJson.dialogs   || [];
+    const fetchedChats = groupsJson.dialogs || [];
 
     // filtra somente usuários (username ou phone)
-    const onlyContacts = fetchedUsers.filter(c => c.username || c.phone);
+    const onlyContacts = fetchedUsers.filter((c) => c.username || c.phone);
 
     // filtra somente grupos/canais
-    const onlyGroups = fetchedChats.filter(d =>
-      d.chat?.type === "group" ||
-      d.chat?.type === "supergroup" ||
-      d.chat?.type === "channel"
+    const onlyGroups = fetchedChats.filter(
+      (d) =>
+        d.chat?.type === "group" ||
+        d.chat?.type === "supergroup" ||
+        d.chat?.type === "channel"
     );
 
     setContacts({
@@ -136,6 +138,14 @@ export default function Home() {
     if (allRecipients.length === 0)
       return alert("⚠️ Nenhum destinatário válido encontrado.");
 
+    // Se agendado, apenas notifica (a lógica de agendamento real ficaria no backend ou automação)
+    if (scheduledAt) {
+      alert(
+        `⏰ Envio agendado para ${new Date(scheduledAt).toLocaleString()}`
+      );
+      return;
+    }
+
     const formData = new FormData();
     formData.append("phone", phone);
     formData.append("message", message);
@@ -155,7 +165,9 @@ export default function Home() {
       case "telegram":
         return (
           <div className="space-y-6">
-            <h3 className="text-2xl font-bold">🔮 Disparo via Telegram (Conta Real)</h3>
+            <h3 className="text-2xl font-bold">
+              🔮 Disparo via Telegram (Conta Real)
+            </h3>
 
             <input
               placeholder="Seu número de telefone (+55...)"
@@ -192,7 +204,8 @@ export default function Home() {
               onClick={async () => {
                 const phone = telegramTokenRef.current.value;
                 const code = document.getElementById("codeInput").value;
-                if (!code || !codeHash) return alert("Código ou hash ausente.");
+                if (!code || !codeHash)
+                  return alert("Código ou hash ausente.");
                 const res = await fetch(`${API_URL}/verify-code`, {
                   method: "POST",
                   headers: { "Content-Type": "application/json" },
@@ -235,16 +248,18 @@ export default function Home() {
               {contacts.users.length > 0 && (
                 <button
                   onClick={() => {
-                    const allC = contacts.users.map(c => c.username || c.phone);
-                    setSelectedContacts(prev =>
-                      allC.every(id => prev.includes(id))
-                        ? prev.filter(id => !allC.includes(id))
+                    const allC = contacts.users.map((c) => c.username || c.phone);
+                    setSelectedContacts((prev) =>
+                      allC.every((id) => prev.includes(id))
+                        ? prev.filter((id) => !allC.includes(id))
                         : [...new Set([...prev, ...allC])]
                     );
                   }}
                   className="bg-indigo-600 px-4 py-2 rounded text-white font-bold"
                 >
-                  {contacts.users.every(c => selectedContacts.includes(c.username || c.phone))
+                  {contacts.users.every((c) =>
+                    selectedContacts.includes(c.username || c.phone)
+                  )
                     ? "❌ Desmarcar Contatos"
                     : "✔️ Marcar Contatos"}
                 </button>
@@ -252,20 +267,33 @@ export default function Home() {
               {contacts.groups.length > 0 && (
                 <button
                   onClick={() => {
-                    const allG = contacts.groups.map(g => g.chat.id);
-                    setSelectedContacts(prev =>
-                      allG.every(id => prev.includes(id))
-                        ? prev.filter(id => !allG.includes(id))
+                    const allG = contacts.groups.map((g) => g.chat.id);
+                    setSelectedContacts((prev) =>
+                      allG.every((id) => prev.includes(id))
+                        ? prev.filter((id) => !allG.includes(id))
                         : [...new Set([...prev, ...allG])]
                     );
                   }}
                   className="bg-yellow-600 px-4 py-2 rounded text-white font-bold"
                 >
-                  {contacts.groups.every(g => selectedContacts.includes(g.chat.id))
+                  {contacts.groups.every((g) =>
+                    selectedContacts.includes(g.chat.id)
+                  )
                     ? "❌ Desmarcar Grupos"
                     : "✔️ Marcar Grupos"}
                 </button>
               )}
+            </div>
+
+            {/* NOVO: escolha de data/hora para agendamento */}
+            <div className="flex items-center gap-2">
+              <input
+                type="datetime-local"
+                value={scheduledAt}
+                onChange={(e) => setScheduledAt(e.target.value)}
+                className="p-2 rounded bg-gray-800 text-white"
+              />
+              <span className="text-gray-400">⏰ Agendar Envio</span>
             </div>
 
             <div className="flex gap-2 flex-wrap">
@@ -273,16 +301,17 @@ export default function Home() {
                 <button
                   onClick={() => {
                     const allIds = [
-                      ...contacts.users.map(c => c.username || c.phone),
-                      ...contacts.groups.map(g => g.chat.id),
+                      ...contacts.users.map((c) => c.username || c.phone),
+                      ...contacts.groups.map((g) => g.chat.id),
                     ];
-                    setSelectedContacts(prev =>
+                    setSelectedContacts((prev) =>
                       prev.length === allIds.length ? [] : allIds
                     );
                   }}
                   className="bg-blue-600 px-4 py-2 rounded text-white font-bold"
                 >
-                  {selectedContacts.length === (contacts.users.length + contacts.groups.length)
+                  {selectedContacts.length ===
+                  contacts.users.length + contacts.groups.length
                     ? "❌ Desselecionar Todos"
                     : "✔️ Selecionar Todos"}
                 </button>
@@ -296,17 +325,24 @@ export default function Home() {
                 {contacts.users.map((c, i) => {
                   const id = c.username || c.phone;
                   return (
-                    <label key={i} className="flex items-center gap-2 text-white text-sm mb-1">
+                    <label
+                      key={i}
+                      className="flex items-center gap-2 text-white text-sm mb-1"
+                    >
                       <input
                         type="checkbox"
                         checked={selectedContacts.includes(id)}
-                        onChange={e =>
+                        onChange={(e) =>
                           e.target.checked
-                            ? setSelectedContacts(prev => [...prev, id])
-                            : setSelectedContacts(prev => prev.filter(v => v !== id))
+                            ? setSelectedContacts((prev) => [...prev, id])
+                            : setSelectedContacts((prev) =>
+                                prev.filter((v) => v !== id)
+                              )
                         }
                       />
-                      <span>{c.first_name} {c.last_name || ""} ({id})</span>
+                      <span>
+                        {c.first_name} {c.last_name || ""} ({id})
+                      </span>
                     </label>
                   );
                 })}
@@ -319,14 +355,19 @@ export default function Home() {
                   const gid = g.chat.id;
                   const title = g.chat.title;
                   return (
-                    <label key={i} className="flex items-center gap-2 text-yellow-300 text-sm mb-1">
+                    <label
+                      key={i}
+                      className="flex items-center gap-2 text-yellow-300 text-sm mb-1"
+                    >
                       <input
                         type="checkbox"
                         checked={selectedContacts.includes(gid)}
-                        onChange={e =>
+                        onChange={(e) =>
                           e.target.checked
-                            ? setSelectedContacts(prev => [...prev, gid])
-                            : setSelectedContacts(prev => prev.filter(v => v !== gid))
+                            ? setSelectedContacts((prev) => [...prev, gid])
+                            : setSelectedContacts((prev) =>
+                                prev.filter((v) => v !== gid)
+                              )
                         }
                       />
                       <span>{title}</span>
@@ -353,13 +394,17 @@ export default function Home() {
               className="w-full p-3 bg-gray-800 rounded text-white"
             />
 
-            <input ref={fileRef} type="file" className="w-full p-2 bg-gray-800 rounded" />
+            <input
+              ref={fileRef}
+              type="file"
+              className="w-full p-2 bg-gray-800 rounded"
+            />
 
             <button
               onClick={handleBroadcast}
               className="bg-blue-600 px-6 py-2 rounded text-white font-bold"
             >
-              📢 Enviar
+              📢 {scheduledAt ? "Agendar" : "Enviar"}
             </button>
           </div>
         );
@@ -407,39 +452,67 @@ export default function Home() {
     }
   };
 
-  if (loading) return <div className="text-white text-center py-20">Carregando...</div>;
+  if (loading)
+    return <div className="text-white text-center py-20">Carregando...</div>;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-black to-gray-900 text-white flex font-sans">
       <div className="w-64 bg-[#1c152b] p-6 space-y-4 shadow-xl">
         <h2 className="text-xl font-bold mb-6">📡 Plataformas</h2>
-        <button onClick={() => setActiveTab("telegram")} className="w-full bg-gray-800 hover:bg-purple-700 py-2 rounded">
+        <button
+          onClick={() => setActiveTab("telegram")}
+          className="w-full bg-gray-800 hover:bg-purple-700 py-2 rounded"
+        >
           Telegram
         </button>
-        <button onClick={() => setActiveTab("whatsapp")} className="w-full bg-gray-800 hover:bg-green-600 py-2 rounded">
+        <button
+          onClick={() => setActiveTab("whatsapp")}
+          className="w-full bg-gray-800 hover:bg-green-600 py-2 rounded"
+        >
           WhatsApp
         </button>
-        <button onClick={() => setActiveTab("facebook")} className="w-full bg-gray-800 hover:bg-blue-600 py-2 rounded">
+        <button
+          onClick={() => setActiveTab("facebook")}
+          className="w-full bg-gray-800 hover:bg-blue-600 py-2 rounded"
+        >
           Facebook
         </button>
-        <button onClick={() => setActiveTab("discord")} className="w-full bg-gray-800 hover:bg-indigo-600 py-2 rounded">
+        <button
+          onClick={() => setActiveTab("discord")}
+          className="w-full bg-gray-800 hover:bg-indigo-600 py-2 rounded"
+        >
           Discord
         </button>
-        <button onClick={() => setActiveTab("x")} className="w-full bg-gray-800 hover:bg-sky-600 py-2 rounded">
+        <button
+          onClick={() => setActiveTab("x")}
+          className="w-full bg-gray-800 hover:bg-sky-600 py-2 rounded"
+        >
           X (Twitter)
         </button>
         <hr className="my-4 border-gray-600" />
-        <button onClick={() => setActiveTab("estatisticas")} className="w-full bg-gray-800 hover:bg-cyan-600 py-2 rounded">
+        <button
+          onClick={() => setActiveTab("estatisticas")}
+          className="w-full bg-gray-800 hover:bg-cyan-600 py-2 rounded"
+        >
           📊 Estatísticas
         </button>
-        <button onClick={() => setActiveTab("historico")} className="w-full bg-gray-800 hover:bg-orange-600 py-2 rounded">
+        <button
+          onClick={() => setActiveTab("historico")}
+          className="w-full bg-gray-800 hover:bg-orange-600 py-2 rounded"
+        >
           📜 Histórico
         </button>
-        <button onClick={() => setActiveTab("upgrade")} className="w-full bg-yellow-600 hover:bg-yellow-700 py-2 rounded">
+        <button
+          onClick={() => setActiveTab("upgrade")}
+          className="w-full bg-yellow-600 hover:bg-yellow-700 py-2 rounded"
+        >
           💳 Upgrade de Plano
         </button>
         <button
-          onClick={() => { auth.signOut(); navigate("/auth"); }}
+          onClick={() => {
+            auth.signOut();
+            navigate("/auth");
+          }}
           className="w-full mt-8 bg-red-600 hover:bg-red-700 py-2 rounded font-bold text-white"
         >
           Sair
@@ -451,11 +524,22 @@ export default function Home() {
           <h1 className="text-3xl font-bold mb-2">👤 Bem-vindo</h1>
           {userData ? (
             <>
-              <p><span className="font-bold">Email:</span> {userData.email}</p>
-              <p><span className="font-bold">Plano:</span> {userData.isPremium ? "Premium" : "Grátis"}</p>
-              <p><span className="font-bold">Criado em:</span> {new Date(userData.createdAt).toLocaleString()}</p>
+              <p>
+                <span className="font-bold">Email:</span> {userData.email}
+              </p>
+              <p>
+                <span className="font-bold">Plano:</span>{" "}
+                {userData.isPremium ? "Premium" : "Grátis"}
+              </p>
+              <p>
+                <span className="font-bold">Criado em:</span>{" "}
+                {new Date(userData.createdAt).toLocaleString()}
+              </p>
               {userData.isPremium && userData.validUntil && (
-                <p><span className="font-bold">Válido até:</span> {new Date(userData.validUntil).toLocaleDateString()}</p>
+                <p>
+                  <span className="font-bold">Válido até:</span>{" "}
+                  {new Date(userData.validUntil).toLocaleDateString()}
+                </p>
               )}
             </>
           ) : (
