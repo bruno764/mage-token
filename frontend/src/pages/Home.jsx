@@ -11,6 +11,7 @@ export default function Home() {
   const [activeTab, setActiveTab] = useState("telegram");
   const [loading, setLoading] = useState(true);
   const [contacts, setContacts] = useState([]);
+  const [selectedContacts, setSelectedContacts] = useState([]);
   const [sessionAuthorized, setSessionAuthorized] = useState(false);
   const [codeHash, setCodeHash] = useState("");
   const navigate = useNavigate();
@@ -18,7 +19,7 @@ export default function Home() {
   const messageRef = useRef();
   const fileRef = useRef();
   const telegramTokenRef = useRef();
-  const manualNumbersRef = useRef(); // 📌 campo novo
+  const manualNumbersRef = useRef();
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
@@ -83,7 +84,9 @@ export default function Home() {
       body: JSON.stringify({ phone }),
     });
     const result = await res.json();
-    setContacts(result.contacts || []);
+    const fetched = result.contacts || [];
+    setContacts(fetched);
+    setSelectedContacts(fetched.map(c => c.username || c.phone).filter(Boolean));
     alert("📋 Lista de contatos carregada.");
   };
 
@@ -93,18 +96,10 @@ export default function Home() {
     const file = fileRef.current.files[0];
     const manualNumbers = manualNumbersRef.current?.value?.split("\n").map(n => n.trim()).filter(n => n) || [];
 
-    if (!message || !phone) {
-      return alert("⚠️ Número, mensagem e contatos obrigatórios.");
-    }
+    if (!message || !phone) return alert("⚠️ Número, mensagem e contatos obrigatórios.");
 
-    const allRecipients = [
-      ...contacts.map(c => c.username || c.phone),
-      ...manualNumbers
-    ].filter(Boolean);
-
-    if (allRecipients.length === 0) {
-      return alert("⚠️ Nenhum destinatário válido encontrado.");
-    }
+    const allRecipients = [...selectedContacts, ...manualNumbers].filter(Boolean);
+    if (allRecipients.length === 0) return alert("⚠️ Nenhum destinatário válido encontrado.");
 
     const formData = new FormData();
     formData.append("phone", phone);
@@ -144,9 +139,7 @@ export default function Home() {
                   body: JSON.stringify({ phone }),
                 });
                 const result = await res.json();
-                if (result.phone_code_hash) {
-                  setCodeHash(result.phone_code_hash);
-                }
+                if (result.phone_code_hash) setCodeHash(result.phone_code_hash);
                 alert(result.status || result.error);
               }}
               className="bg-yellow-500 px-4 py-2 rounded text-white font-bold"
@@ -184,18 +177,38 @@ export default function Home() {
               ✅ Confirmar Código
             </button>
 
-            {sessionAuthorized && (
-              <div className="text-green-400 font-semibold">🟢 Conectado</div>
-            )}
+            {sessionAuthorized && <div className="text-green-400 font-semibold">🟢 Conectado</div>}
 
             <div className="flex gap-2">
-              <button onClick={handleCheckSession} className="bg-purple-500 px-4 py-2 rounded text-white font-bold">
-                🔍 Verificar Sessão
-              </button>
-              <button onClick={handleListContacts} className="bg-cyan-600 px-4 py-2 rounded text-white font-bold">
-                📇 Listar Contatos
-              </button>
+              <button onClick={handleCheckSession} className="bg-purple-500 px-4 py-2 rounded text-white font-bold">🔍 Verificar Sessão</button>
+              <button onClick={handleListContacts} className="bg-cyan-600 px-4 py-2 rounded text-white font-bold">📇 Listar Contatos</button>
             </div>
+
+            {contacts.length > 0 && (
+              <div className="max-h-48 overflow-y-scroll border border-gray-700 rounded p-2 bg-gray-900">
+                {contacts.map((c, i) => {
+                  const key = c.username || c.phone || i;
+                  const label = `${c.first_name || ""} ${c.last_name || ""} ${c.username || c.phone}`;
+                  return (
+                    <label key={key} className="flex items-center gap-2 text-white text-sm mb-1">
+                      <input
+                        type="checkbox"
+                        checked={selectedContacts.includes(c.username || c.phone)}
+                        onChange={(e) => {
+                          const value = c.username || c.phone;
+                          if (e.target.checked) {
+                            setSelectedContacts((prev) => [...prev, value]);
+                          } else {
+                            setSelectedContacts((prev) => prev.filter((v) => v !== value));
+                          }
+                        }}
+                      />
+                      <span>{label}</span>
+                    </label>
+                  );
+                })}
+              </div>
+            )}
 
             <div>
               <h4 className="text-lg font-semibold mb-1">📄 Números externos (um por linha)</h4>
@@ -220,23 +233,17 @@ export default function Home() {
               onClick={handleBroadcast}
               className="bg-blue-600 hover:bg-blue-700 px-6 py-3 rounded font-bold text-white"
             >
-              📢 Enviar para todos os contatos
+              📢 Enviar para contatos selecionados
             </button>
           </div>
         );
 
-      case "whatsapp":
-        return <div>📱 Integração com WhatsApp</div>;
-      case "facebook":
-        return <div>📘 Facebook Sender</div>;
-      case "discord":
-        return <div>🎮 Bot para Discord</div>;
-      case "x":
-        return <div>🐦 Auto Reply / Auto DM no X</div>;
-      case "estatisticas":
-        return <div>📊 Estatísticas e Relatórios</div>;
-      case "historico":
-        return <div>🕓 Histórico de Campanhas</div>;
+      case "whatsapp": return <div>📱 Integração com WhatsApp</div>;
+      case "facebook": return <div>📘 Facebook Sender</div>;
+      case "discord": return <div>🎮 Bot para Discord</div>;
+      case "x": return <div>🐦 Auto Reply / Auto DM no X</div>;
+      case "estatisticas": return <div>📊 Estatísticas e Relatórios</div>;
+      case "historico": return <div>🕓 Histórico de Campanhas</div>;
       case "upgrade":
         return (
           <div>
@@ -265,8 +272,7 @@ export default function Home() {
             )}
           </div>
         );
-      default:
-        return <div>Selecione uma plataforma.</div>;
+      default: return <div>Selecione uma plataforma.</div>;
     }
   };
 
