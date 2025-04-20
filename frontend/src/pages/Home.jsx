@@ -84,17 +84,13 @@ export default function Home() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ phone }),
     });
-
     const result = await res.json();
     const fetched = result.contacts || [];
 
     const onlyContacts = fetched.filter((c) => c.username || c.phone);
     const onlyGroups   = fetched.filter((c) => c.title);
 
-    setContacts({
-      users: onlyContacts,
-      groups: onlyGroups,
-    });
+    setContacts({ users: onlyContacts, groups: onlyGroups });
     setSelectedContacts([]);
     alert("📋 Lista de contatos e grupos carregada.");
   };
@@ -208,117 +204,120 @@ export default function Home() {
               >
                 📇 Listar Contatos
               </button>
+            </div>
 
-              {/* botão unificado */}
-              {(contacts.users.length + contacts.groups.length) > 0 && (
-                <button
-                  onClick={() => {
-                    const all = [
-                      ...contacts.users.map((c) => c.username || c.phone),
-                      ...contacts.groups.map((g) => g.id),
-                    ];
-                    setSelectedContacts((prev) =>
-                      prev.length === all.length ? [] : all
-                    );
-                  }}
-                  className="bg-blue-600 px-4 py-2 rounded text-white font-bold"
-                >
-                  {selectedContacts.length ===
-                  contacts.users.length + contacts.groups.length
-                    ? "❌ Desselecionar Todos"
-                    : "✔️ Selecionar Todos"}
-                </button>
-              )}
-              
-              {/* ⚡ NOVOS: Selecionar Contatos */}
+            {/* Botões de selecionar/desmarcar individual */}
+            <div className="flex gap-2 flex-wrap">
               {contacts.users.length > 0 && (
                 <button
                   onClick={() => {
                     const allC = contacts.users.map((c) => c.username || c.phone);
                     setSelectedContacts((prev) =>
-                      allC.every((x) => prev.includes(x)) ? prev.filter((x) => !allC.includes(x)) : [...new Set([...prev, ...allC])]
+                      allC.every((x) => prev.includes(x))
+                        ? prev.filter((x) => !allC.includes(x))
+                        : [...new Set([...prev, ...allC])]
                     );
                   }}
                   className="bg-indigo-600 px-4 py-2 rounded text-white font-bold"
                 >
-                  {contacts.users.every((c) => selectedContacts.includes(c.username || c.phone))
+                  {contacts.users.every((c) =>
+                    selectedContacts.includes(c.username || c.phone)
+                  )
                     ? "❌ Desmarcar Contatos"
                     : "✔️ Marcar Contatos"}
                 </button>
               )}
 
-              {/* ⚡ NOVOS: Selecionar Grupos */}
               {contacts.groups.length > 0 && (
                 <button
                   onClick={() => {
                     const allG = contacts.groups.map((g) => g.id);
                     setSelectedContacts((prev) =>
-                      allG.every((x) => prev.includes(x)) ? prev.filter((x) => !allG.includes(x)) : [...new Set([...prev, ...allG])]
+                      allG.every((x) => prev.includes(x))
+                        ? prev.filter((x) => !allG.includes(x))
+                        : [...new Set([...prev, ...allG])]
                     );
                   }}
                   className="bg-yellow-600 px-4 py-2 rounded text-white font-bold"
                 >
-                  {contacts.groups.every((g) => selectedContacts.includes(g.id))
+                  {contacts.groups.every((g) =>
+                    selectedContacts.includes(g.id)
+                  )
                     ? "❌ Desmarcar Grupos"
                     : "✔️ Marcar Grupos"}
                 </button>
               )}
             </div>
 
-            {/* Contatos */}
-            {contacts.users.length > 0 && (
-              <div className="max-h-48 overflow-y-scroll border border-gray-700 rounded p-2 bg-gray-900 mb-4">
-                <h4 className="text-white text-lg font-bold mb-2">👤 Contatos</h4>
-                {contacts.users.map((c, i) => {
-                  const id = c.username || c.phone;
-                  const label = `${c.first_name || ""} ${c.last_name || ""} ${id}`;
-                  return (
-                    <label key={i} className="flex items-center gap-2 text-white text-sm mb-1">
-                      <input
-                        type="checkbox"
-                        checked={selectedContacts.includes(id)}
-                        onChange={(e) => {
-                          if (e.target.checked)
-                            setSelectedContacts((prev) => [...prev, id]);
-                          else
-                            setSelectedContacts((prev) => prev.filter((v) => v !== id));
-                        }}
-                      />
-                      <span>{label}</span>
-                    </label>
-                  );
-                })}
-              </div>
-            )}
+            {/* Caixas separadas */}
+            <div className="space-y-4">
+              {/* Contatos */}
+              {contacts.users.length > 0 && (
+                <div className="max-h-32 overflow-y-auto border border-gray-700 rounded p-2 bg-gray-900">
+                  <h4 className="text-white text-lg font-bold mb-2">👤 Contatos</h4>
+                  {contacts.users.map((c, i) => {
+                    const id = c.username || c.phone;
+                    const label = `${c.first_name || ""} ${c.last_name || ""} ${id}`;
+                    return (
+                      <label
+                        key={i}
+                        className="flex items-center gap-2 text-white text-sm mb-1"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={selectedContacts.includes(id)}
+                          onChange={(e) =>
+                            e.target.checked
+                              ? setSelectedContacts((prev) => [...prev, id])
+                              : setSelectedContacts((prev) =>
+                                  prev.filter((v) => v !== id)
+                                )
+                          }
+                        />
+                        <span>{label}</span>
+                      </label>
+                    );
+                  })}
+                </div>
+              )}
 
-            {/* Grupos */}
-            {contacts.groups.length > 0 && (
-              <div className="max-h-48 overflow-y-scroll border border-yellow-700 rounded p-2 bg-gray-900">
-                <h4 className="text-yellow-400 text-lg font-bold mb-2">👥 Grupos</h4>
-                {contacts.groups.map((g, i) => {
-                  const id = g.id;
-                  const label = g.title || id;
-                  return (
-                    <label key={i} className="flex items-center gap-2 text-yellow-300 text-sm mb-1">
-                      <input
-                        type="checkbox"
-                        checked={selectedContacts.includes(id)}
-                        onChange={(e) => {
-                          if (e.target.checked)
-                            setSelectedContacts((prev) => [...prev, id]);
-                          else
-                            setSelectedContacts((prev) => prev.filter((v) => v !== id));
-                        }}
-                      />
-                      <span>{label}</span>
-                    </label>
-                  );
-                })}
-              </div>
-            )}
+              {/* Grupos */}
+              {contacts.groups.length > 0 && (
+                <div className="max-h-32 overflow-y-auto border border-yellow-700 rounded p-2 bg-gray-900">
+                  <h4 className="text-yellow-400 text-lg font-bold mb-2">
+                    👥 Grupos
+                  </h4>
+                  {contacts.groups.map((g, i) => {
+                    const id = g.id;
+                    const label = g.title || id;
+                    return (
+                      <label
+                        key={i}
+                        className="flex items-center gap-2 text-yellow-300 text-sm mb-1"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={selectedContacts.includes(id)}
+                          onChange={(e) =>
+                            e.target.checked
+                              ? setSelectedContacts((prev) => [...prev, id])
+                              : setSelectedContacts((prev) =>
+                                  prev.filter((v) => v !== id)
+                                )
+                          }
+                        />
+                        <span>{label}</span>
+                      </label>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
 
             <div>
-              <h4 className="text-lg font-semibold mb-1">📄 Números externos (um por linha)</h4>
+              <h4 className="text-lg font-semibold mb-1">
+                📄 Números externos (um por linha)
+              </h4>
               <textarea
                 ref={manualNumbersRef}
                 rows={4}
@@ -349,12 +348,18 @@ export default function Home() {
           </div>
         );
 
-      case "whatsapp": return <div>📱 Integração com WhatsApp</div>;
-      case "facebook": return <div>📘 Facebook Sender</div>;
-      case "discord": return <div>🎮 Bot para Discord</div>;
-      case "x": return <div>🐦 Auto Reply / Auto DM no X</div>;
-      case "estatisticas": return <div>📊 Estatísticas e Relatórios</div>;
-      case "historico": return <div>🕓 Histórico de Campanhas</div>;
+      case "whatsapp":
+        return <div>📱 Integração com WhatsApp</div>;
+      case "facebook":
+        return <div>📘 Facebook Sender</div>;
+      case "discord":
+        return <div>🎮 Bot para Discord</div>;
+      case "x":
+        return <div>🐦 Auto Reply / Auto DM no X</div>;
+      case "estatisticas":
+        return <div>📊 Estatísticas e Relatórios</div>;
+      case "historico":
+        return <div>🕓 Histórico de Campanhas</div>;
       case "upgrade":
         return (
           <div>
