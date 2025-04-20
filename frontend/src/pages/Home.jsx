@@ -84,6 +84,7 @@ export default function Home() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ phone }),
     });
+
     const result = await res.json();
     const fetched = result.contacts || [];
 
@@ -206,7 +207,6 @@ export default function Home() {
               </button>
             </div>
 
-            {/* Botões de selecionar/desmarcar individual */}
             <div className="flex gap-2 flex-wrap">
               {contacts.users.length > 0 && (
                 <button
@@ -249,11 +249,11 @@ export default function Home() {
               )}
             </div>
 
-            {/* Caixas separadas */}
+            {/* ——— Caixas separadas com altura fixa ——— */}
             <div className="space-y-4">
               {/* Contatos */}
               {contacts.users.length > 0 && (
-                <div className="max-h-32 overflow-y-auto border border-gray-700 rounded p-2 bg-gray-900">
+                <div className="h-48 overflow-y-auto border border-gray-700 rounded p-2 bg-gray-900">
                   <h4 className="text-white text-lg font-bold mb-2">👤 Contatos</h4>
                   {contacts.users.map((c, i) => {
                     const id = c.username || c.phone;
@@ -283,10 +283,8 @@ export default function Home() {
 
               {/* Grupos */}
               {contacts.groups.length > 0 && (
-                <div className="max-h-32 overflow-y-auto border border-yellow-700 rounded p-2 bg-gray-900">
-                  <h4 className="text-yellow-400 text-lg font-bold mb-2">
-                    👥 Grupos
-                  </h4>
+                <div className="h-48 overflow-y-auto border border-yellow-700 rounded p-2 bg-gray-900">
+                  <h4 className="text-yellow-400 text-lg font-bold mb-2">👥 Grupos</h4>
                   {contacts.groups.map((g, i) => {
                     const id = g.id;
                     const label = g.title || id;
@@ -315,9 +313,7 @@ export default function Home() {
             </div>
 
             <div>
-              <h4 className="text-lg font-semibold mb-1">
-                📄 Números externos (um por linha)
-              </h4>
+              <h4 className="text-lg font-semibold mb-1">📄 Números externos (um por linha)</h4>
               <textarea
                 ref={manualNumbersRef}
                 rows={4}
@@ -365,9 +361,8 @@ export default function Home() {
           <div>
             <h3 className="text-2xl font-bold mb-4">💳 Upgrade de Plano</h3>
             {userData?.isPremium ? (
-              <div className="text-green-400">
-                Você já é um membro <strong>Premium</strong>! <br />
-                Validade:{" "}
+              <div className="text-green-400">Você já é Premium!<br/>
+                Válido até:{" "}
                 <span className="text-white font-semibold">
                   {new Date(userData.validUntil).toLocaleDateString()}
                 </span>
@@ -375,14 +370,13 @@ export default function Home() {
             ) : (
               <>
                 <p className="text-gray-300 mb-4">
-                  Faça upgrade e tenha acesso a todas as plataformas sem limites,
-                  com suporte prioritário e ferramentas exclusivas.
+                  Faça upgrade e tenha acesso a todas as plataformas sem limites.
                 </p>
                 <button
                   onClick={handleUpgrade}
                   className="bg-orange-500 hover:bg-orange-600 px-6 py-3 rounded font-bold"
                 >
-                  Ativar Premium (R$ 49/mês)
+                  Ativar Premium (R$ 49/mês)
                 </button>
               </>
             )}
@@ -449,11 +443,8 @@ export default function Home() {
           💳 Upgrade de Plano
         </button>
         <button
-          onClick={() => {
-            auth.signOut();
-            navigate("/auth");
-          }}
-          className="w-full mt-8 bg-red-600 hover:bg-red-700 transition py-2 rounded font-bold text-white"
+          onClick={() => { auth.signOut(); navigate("/auth"); }}
+          className="w-full mt-8 bg-red-600 hover:bg-red-700 py-2 rounded font-bold text-white"
         >
           Sair
         </button>
