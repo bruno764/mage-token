@@ -128,8 +128,50 @@ export default function Home() {
               className="w-full p-3 rounded bg-gray-800 text-white placeholder-gray-400"
             />
 
+            <button
+              onClick={async () => {
+                const phone = telegramTokenRef.current.value;
+                if (!phone) return alert("Digite o número de telefone.");
+                const res = await fetch(`${API_URL}/start-login`, {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ phone }),
+                });
+                const result = await res.json();
+                alert(result.status || result.error);
+              }}
+              className="bg-yellow-500 px-4 py-2 rounded text-white font-bold"
+            >
+              📩 Enviar Código
+            </button>
+
+            <input
+              type="text"
+              placeholder="Código recebido no Telegram"
+              id="codeInput"
+              className="w-full p-3 rounded bg-gray-800 text-white placeholder-gray-400"
+            />
+
+            <button
+              onClick={async () => {
+                const phone = telegramTokenRef.current.value;
+                const code = document.getElementById("codeInput").value;
+                if (!code) return alert("Digite o código.");
+                const res = await fetch(`${API_URL}/verify-code`, {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ phone, code }),
+                });
+                const result = await res.json();
+                alert(result.status || result.error);
+              }}
+              className="bg-green-600 px-4 py-2 rounded text-white font-bold"
+            >
+              ✅ Confirmar Código
+            </button>
+
             <div className="flex gap-2">
-              <button onClick={handleCheckSession} className="bg-yellow-500 px-4 py-2 rounded text-white font-bold">
+              <button onClick={handleCheckSession} className="bg-purple-500 px-4 py-2 rounded text-white font-bold">
                 🔍 Verificar Sessão
               </button>
               <button onClick={handleListContacts} className="bg-cyan-600 px-4 py-2 rounded text-white font-bold">
