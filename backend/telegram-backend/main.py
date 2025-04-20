@@ -1,5 +1,3 @@
-# main.py
-
 from fastapi import FastAPI, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -146,7 +144,13 @@ async def send_message(
         client = TelegramClient(f"{SESSION_DIR}/{phone}", API_ID, API_HASH)
         await client.connect()
 
-        entity = await client.get_entity(recipient)
+        # Converte ID numérico em int para grupos
+        try:
+            target = int(recipient)
+        except ValueError:
+            target = recipient
+
+        entity = await client.get_entity(target)
 
         if file:
             file_path = f"{TEMP_DIR}/{file.filename}"
@@ -183,7 +187,13 @@ async def send_broadcast(
 
         for recipient in recipients_list:
             try:
-                entity = await client.get_entity(recipient)
+                # Converte ID numérico em int para grupos
+                try:
+                    target = int(recipient)
+                except ValueError:
+                    target = recipient
+
+                entity = await client.get_entity(target)
                 if file_path:
                     await client.send_file(entity, file_path, caption=message)
                 else:
