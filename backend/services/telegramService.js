@@ -1,23 +1,13 @@
-import axios from "axios";
+import { db } from "../firebase/firebase.js";
+import { logger } from "../utils/logger.js";
 
-const TELEGRAM_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
-const TELEGRAM_API = `https://api.telegram.org/bot${TELEGRAM_TOKEN}`;
-
-export const broadcastMessage = async (message, chatIds) => {
-  const results = [];
-
-  for (const chatId of chatIds) {
-    try {
-      const res = await axios.post(`${TELEGRAM_API}/sendMessage`, {
-        chat_id: chatId,
-        text: message,
-        parse_mode: "Markdown"
-      });
-      results.push({ chatId, status: "enviado", message_id: res.data.result.message_id });
-    } catch (error) {
-      results.push({ chatId, status: "falhou", error: error.response?.data || error.message });
-    }
+export const getTelegramStatus = async (uid) => {
+  try {
+    const ref = db.collection("telegramStatus").doc(uid);
+    const doc = await ref.get();
+    return doc.exists ? doc.data() : { active: false };
+  } catch (err) {
+    logger.error("Erro ao buscar status do Telegram:", err);
+    throw err;
   }
-
-  return results;
 };

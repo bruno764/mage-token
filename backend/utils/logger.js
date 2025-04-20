@@ -1,4 +1,5 @@
-export const log = (msg) => {
-    console.log(`[${new Date().toISOString()}] ${msg}`);
+export const logger = {
+    log: (...args) => console.log("🟢", ...args),
+    error: (...args) => console.error("🔴", ...args),
   };
   

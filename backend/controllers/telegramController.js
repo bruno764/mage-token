@@ -1,17 +1,14 @@
-import { broadcastMessage } from "../services/telegramService.js";
+import { getTelegramStatus } from "../services/telegramService.js";
 
-export const sendBroadcast = async (req, res) => {
-  const { message, chatIds } = req.body;
+export const getTelegramData = async (req, res) => {
+  const { uid } = req.params;
 
-  if (!message || !Array.isArray(chatIds)) {
-    return res.status(400).json({ error: "Mensagem e lista de chatIds são obrigatórios." });
-  }
+  if (!uid) return res.status(400).json({ error: "UID é obrigatório" });
 
   try {
-    const result = await broadcastMessage(message, chatIds);
-    res.status(200).json({ success: true, result });
-  } catch (error) {
-    console.error("Erro ao enviar broadcast:", error);
-    res.status(500).json({ error: "Erro interno ao enviar mensagens." });
+    const status = await getTelegramStatus(uid);
+    res.json({ ok: true, status });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: "Erro interno" });
   }
 };
