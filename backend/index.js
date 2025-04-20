@@ -3,6 +3,7 @@ import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import admin from "firebase-admin";
+import { startTelegramBot } from "./telegrambot.js";
 
 dotenv.config();
 
@@ -43,6 +44,9 @@ app.get("/api/user/:uid", async (req, res) => {
     res.status(500).json({ error: "Erro interno" });
   }
 });
+
+// 🔹 Inicia o bot do Telegram
+startTelegramBot();
 
 // Inicializa servidor
 const PORT = process.env.PORT || 5000;
