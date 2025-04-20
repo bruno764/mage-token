@@ -58,3 +58,13 @@ bot.help((ctx) => {
 
 bot.launch();
 console.log("🤖 Mage Token Bot is running");
+
+bot.telegram.setMyCommands([
+    { command: "/start", description: "Iniciar o bot" },
+    { command: "/status", description: "Ver status da sua conta" },
+    { command: "/link", description: "Ver seu link de referência" },
+    { command: "/referrals", description: "Ver quem você indicou" },
+    { command: "/help", description: "Ajuda e instruções" },
+    { command: "/exit", description: "Desconectar do bot" },
+  ]);
+  
