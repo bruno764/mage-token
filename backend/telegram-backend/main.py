@@ -17,7 +17,7 @@ app = FastAPI()
 # 🔐 Libera acesso do frontend (Vercel)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://mage-token.vercel.app"],  # Domínio Vercel liberado
+    allow_origins=["https://mage-token.vercel.app"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -34,6 +34,7 @@ class PhoneNumber(BaseModel):
 class VerifyCode(BaseModel):
     phone: str
     code: str
+    phone_code_hash: str  # <- adicionado
 
 @app.get("/")
 def root():
@@ -45,10 +46,13 @@ async def start_login(data: PhoneNumber):
         print(f"📲 Enviando código para: {data.phone}")
         client = TelegramClient(f"{SESSION_DIR}/{data.phone}", API_ID, API_HASH)
         await client.connect()
-        await client.send_code_request(data.phone)
+        result = await client.send_code_request(data.phone)
         await client.disconnect()
         print("✅ Código enviado.")
-        return {"status": "Código enviado com sucesso"}
+        return {
+            "status": "Código enviado com sucesso",
+            "phone_code_hash": result.phone_code_hash  # <- agora retornando
+        }
     except Exception as e:
         print(f"❌ Erro ao enviar código: {str(e)}")
         return {"error": str(e)}
@@ -59,7 +63,11 @@ async def verify_code(data: VerifyCode):
         print(f"🔐 Verificando código para {data.phone}")
         client = TelegramClient(f"{SESSION_DIR}/{data.phone}", API_ID, API_HASH)
         await client.connect()
-        await client.sign_in(phone=data.phone, code=data.code)
+        await client.sign_in(
+            phone=data.phone,
+            code=data.code,
+            phone_code_hash=data.phone_code_hash  # <- agora usando
+        )
         await client.disconnect()
         print("✅ Sessão salva com sucesso.")
         return {"status": "Login concluído e sessão salva com sucesso ✅"}

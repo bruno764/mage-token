@@ -12,6 +12,7 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [contacts, setContacts] = useState([]);
   const [sessionAuthorized, setSessionAuthorized] = useState(false);
+  const [codeHash, setCodeHash] = useState(""); // Novo estado
   const navigate = useNavigate();
 
   const messageRef = useRef();
@@ -25,7 +26,6 @@ export default function Home() {
         navigate("/auth");
         return;
       }
-
       try {
         const userRef = doc(db, "users", user.uid);
         const docSnap = await getDoc(userRef);
@@ -38,17 +38,14 @@ export default function Home() {
         setLoading(false);
       }
     });
-
     return () => unsubscribe();
   }, [navigate]);
 
   const handleUpgrade = async () => {
     const user = auth.currentUser;
     if (!user) return;
-
     const validade = new Date();
     validade.setMonth(validade.getMonth() + 1);
-
     try {
       const userRef = doc(db, "users", user.uid);
       await setDoc(userRef, {
@@ -56,7 +53,6 @@ export default function Home() {
         isPremium: true,
         validUntil: validade.toISOString(),
       });
-
       setUserData((prev) => ({
         ...prev,
         isPremium: true,
@@ -140,6 +136,9 @@ export default function Home() {
                   body: JSON.stringify({ phone }),
                 });
                 const result = await res.json();
+                if (result.phone_code_hash) {
+                  setCodeHash(result.phone_code_hash);
+                }
                 alert(result.status || result.error);
               }}
               className="bg-yellow-500 px-4 py-2 rounded text-white font-bold"
@@ -158,11 +157,11 @@ export default function Home() {
               onClick={async () => {
                 const phone = telegramTokenRef.current.value;
                 const code = document.getElementById("codeInput").value;
-                if (!code) return alert("Digite o código.");
+                if (!code || !codeHash) return alert("Código ou hash ausente.");
                 const res = await fetch(`${API_URL}/verify-code`, {
                   method: "POST",
                   headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({ phone, code }),
+                  body: JSON.stringify({ phone, code, phone_code_hash: codeHash }),
                 });
                 const result = await res.json();
                 if (result.status) {
