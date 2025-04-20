@@ -4,11 +4,13 @@ import cors from "cors";
 import dotenv from "dotenv";
 import admin from "firebase-admin";
 import multer from "multer";
+import { Telegraf } from "telegraf";
 import fs from "fs";
 import path from "path";
-import { Telegraf } from "telegraf";
+import telegramRoutes from "./routes/telegram.js";
 
 dotenv.config();
+
 const app = express();
 app.use(cors());
 app.use(express.json());
@@ -22,17 +24,19 @@ if (!admin.apps.length) {
 }
 const db = admin.firestore();
 
-// Inicializa bot
+// Inicializa bot global
 const bot = new Telegraf(process.env.BOT_TOKEN);
+bot.launch();
+console.log("🤖 Bot do Telegram iniciado com sucesso!");
 
-// 🔹 Teste
+// Teste
 app.get("/", (_, res) => {
   res.send("🔥 Backend Mage Token funcionando!");
 });
 
-// 🔹 Rota de envio Telegram
-app.post("/api/send-telegram", upload.single("file"), async (req, res) => {
-  const { message, target, userId } = req.body;
+// Rota de envio rápido via bot direto
+app.post("/api/send-telegram-direct", upload.single("file"), async (req, res) => {
+  const { message, userId } = req.body;
   const file = req.file;
 
   try {
@@ -46,12 +50,15 @@ app.post("/api/send-telegram", upload.single("file"), async (req, res) => {
       await bot.telegram.sendMessage(userId, message);
     }
 
-    res.json({ success: true });
+    res.json({ success: true, status: "Enviado com sucesso" });
   } catch (err) {
     console.error("Erro ao enviar mensagem:", err);
     res.status(500).json({ error: "Falha ao enviar mensagem" });
   }
 });
+
+// Usa rotas do Telegram
+app.use("/api", telegramRoutes);
 
 // Start
 const PORT = process.env.PORT || 5000;

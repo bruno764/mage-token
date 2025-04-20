@@ -13,6 +13,7 @@ export default function Home() {
   const messageRef = useRef();
   const typeRef = useRef();
   const fileRef = useRef();
+  const telegramTokenRef = useRef();
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
@@ -65,17 +66,48 @@ export default function Home() {
     }
   };
 
+  const handleConnectTelegram = async () => {
+    const telegramToken = telegramTokenRef.current.value;
+    const user = auth.currentUser;
+    if (!telegramToken) return alert("Insira o token do seu Bot do Telegram.");
+    if (!user) return alert("Usuário não autenticado.");
+
+    try {
+      const response = await fetch("https://mage-token-backend-production.up.railway.app/api/connect-telegram", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          uid: user.uid,
+          telegramToken,
+        }),
+      });
+
+      const result = await response.json();
+      if (result.success) {
+        alert("✅ Telegram conectado com sucesso!");
+      } else {
+        alert("❌ Erro ao conectar Telegram.");
+      }
+    } catch (err) {
+      console.error("Erro:", err);
+      alert("❌ Erro ao conectar Telegram.");
+    }
+  };
+
   const handleStartCampaign = async () => {
     const message = messageRef.current.value;
     const type = typeRef.current.value;
     const file = fileRef.current.files[0];
+    const user = auth.currentUser;
 
+    if (!user) return alert("Usuário não autenticado.");
     if (!message) return alert("Escreva uma mensagem.");
     if (!type) return alert("Escolha um tipo de envio.");
 
     const formData = new FormData();
     formData.append("message", message);
     formData.append("type", type);
+    formData.append("uid", user.uid);
     if (file) formData.append("file", file);
 
     try {
@@ -97,6 +129,18 @@ export default function Home() {
         return (
           <div className="space-y-6">
             <h3 className="text-2xl font-bold">🔮 Disparo via Telegram</h3>
+
+            <input
+              ref={telegramTokenRef}
+              placeholder="Seu token do bot do Telegram"
+              className="w-full p-3 rounded bg-gray-800 text-white placeholder-gray-400"
+            />
+            <button
+              onClick={handleConnectTelegram}
+              className="bg-purple-600 hover:bg-purple-700 px-6 py-3 rounded font-bold text-white"
+            >
+              🔗 Conectar Telegram
+            </button>
 
             <textarea
               ref={messageRef}
