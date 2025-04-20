@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { auth, db } from "../firebase/firebase";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { useNavigate } from "react-router-dom";
@@ -9,6 +9,10 @@ export default function Home() {
   const [activeTab, setActiveTab] = useState("telegram");
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+
+  const messageRef = useRef();
+  const typeRef = useRef();
+  const fileRef = useRef();
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
@@ -61,6 +65,32 @@ export default function Home() {
     }
   };
 
+  const handleStartCampaign = async () => {
+    const message = messageRef.current.value;
+    const type = typeRef.current.value;
+    const file = fileRef.current.files[0];
+
+    if (!message) return alert("Escreva uma mensagem.");
+    if (!type) return alert("Escolha um tipo de envio.");
+
+    const formData = new FormData();
+    formData.append("message", message);
+    formData.append("type", type);
+    if (file) formData.append("file", file);
+
+    try {
+      const response = await fetch("https://mage-token-backend-production.up.railway.app/api/send-telegram", {
+        method: "POST",
+        body: formData,
+      });
+      const result = await response.json();
+      alert("✅ Campanha iniciada: " + result.status);
+    } catch (err) {
+      console.error("Erro ao enviar:", err);
+      alert("❌ Erro ao iniciar campanha.");
+    }
+  };
+
   const renderTabContent = () => {
     switch (activeTab) {
       case "telegram":
@@ -69,26 +99,31 @@ export default function Home() {
             <h3 className="text-2xl font-bold">🔮 Disparo via Telegram</h3>
 
             <textarea
+              ref={messageRef}
               rows={5}
               placeholder="Escreva sua mensagem aqui..."
               className="w-full p-4 rounded bg-gray-800 text-white placeholder-gray-400 resize-none"
             />
 
             <div className="grid md:grid-cols-2 gap-4">
-              <select className="bg-gray-800 text-white p-3 rounded">
+              <select ref={typeRef} className="bg-gray-800 text-white p-3 rounded">
                 <option value="pv">Privado (PV)</option>
                 <option value="grupo">Grupo</option>
                 <option value="resposta">Resposta a mensagens</option>
               </select>
 
               <input
+                ref={fileRef}
                 type="file"
                 className="bg-gray-800 text-white p-3 rounded cursor-pointer"
               />
             </div>
 
             <div className="flex gap-4 mt-4">
-              <button className="bg-green-600 hover:bg-green-700 px-6 py-3 rounded font-bold">
+              <button
+                onClick={handleStartCampaign}
+                className="bg-green-600 hover:bg-green-700 px-6 py-3 rounded font-bold"
+              >
                 ▶️ Iniciar Envio
               </button>
               <button className="bg-red-600 hover:bg-red-700 px-6 py-3 rounded font-bold">
