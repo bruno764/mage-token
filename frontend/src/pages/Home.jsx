@@ -80,13 +80,14 @@ export default function Home() {
   // === Substitui apenas esta função ===
   const handleListContacts = async () => {
     const phone = telegramTokenRef.current.value;
-    // busca usuários
+
+    // 1) busca usuários
     const usersRes = await fetch(`${API_URL}/list-contacts`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ phone }),
     });
-    // busca grupos/conversas
+    // 2) busca grupos/conversas
     const groupsRes = await fetch(`${API_URL}/list-dialogs`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -324,7 +325,6 @@ export default function Home() {
             </button>
           </div>
         );
-
       case "whatsapp":
         return <div>📱 Integração com WhatsApp</div>;
       case "facebook":
@@ -375,16 +375,37 @@ export default function Home() {
     <div className="min-h-screen bg-gradient-to-br from-black to-gray-900 text-white flex font-sans">
       <div className="w-64 bg-[#1c152b] p-6 space-y-4 shadow-xl">
         <h2 className="text-xl font-bold mb-6">📡 Plataformas</h2>
-        <button onClick={() => setActiveTab("telegram")} className="w-full bg-gray-800 hover:bg-purple-700 py-2 rounded">Telegram</button>
-        <button onClick={() => setActiveTab("whatsapp")} className="w-full bg-gray-800 hover:bg-green-600 py-2 rounded">WhatsApp</button>
-        <button onClick={() => setActiveTab("facebook")} className="w-full bg-gray-800 hover:bg-blue-600 py-2 rounded">Facebook</button>
-        <button onClick={() => setActiveTab("discord")} className="w-full bg-gray-800 hover:bg-indigo-600 py-2 rounded">Discord</button>
-        <button onClick={() => setActiveTab("x")} className="w-full bg-gray-800 hover:bg-sky-600 py-2 rounded">X (Twitter)</button>
+        <button onClick={() => setActiveTab("telegram")} className="w-full bg-gray-800 hover:bg-purple-700 py-2 rounded">
+          Telegram
+        </button>
+        <button onClick={() => setActiveTab("whatsapp")} className="w-full bg-gray-800 hover:bg-green-600 py-2 rounded">
+          WhatsApp
+        </button>
+        <button onClick={() => setActiveTab("facebook")} className="w-full bg-gray-800 hover:bg-blue-600 py-2 rounded">
+          Facebook
+        </button>
+        <button onClick={() => setActiveTab("discord")} className="w-full bg-gray-800 hover:bg-indigo-600 py-2 rounded">
+          Discord
+        </button>
+        <button onClick={() => setActiveTab("x")} className="w-full bg-gray-800 hover:bg-sky-600 py-2 rounded">
+          X (Twitter)
+        </button>
         <hr className="my-4 border-gray-600" />
-        <button onClick={() => setActiveTab("estatisticas")} className="w-full bg-gray-800 hover:bg-cyan-600 py-2 rounded">📊 Estatísticas</button>
-        <button onClick={() => setActiveTab("historico")} className="w-full bg-gray-800 hover:bg-orange-600 py-2 rounded">📜 Histórico</button>
-        <button onClick={() => setActiveTab("upgrade")} className="w-full bg-yellow-600 hover:bg-yellow-700 py-2 rounded">💳 Upgrade de Plano</button>
-        <button onClick={() => { auth.signOut(); navigate("/auth"); }} className="w-full mt-8 bg-red-600 hover:bg-red-700 py-2 rounded font-bold text-white">Sair</button>
+        <button onClick={() => setActiveTab("estatisticas")} className="w-full bg-gray-800 hover:bg-cyan-600 py-2 rounded">
+          📊 Estatísticas
+        </button>
+        <button onClick={() => setActiveTab("historico")} className="w-full bg-gray-800 hover:bg-orange-600 py-2 rounded">
+          📜 Histórico
+        </button>
+        <button onClick={() => setActiveTab("upgrade")} className="w-full bg-yellow-600 hover:bg-yellow-700 py-2 rounded">
+          💳 Upgrade de Plano
+        </button>
+        <button
+          onClick={() => { auth.signOut(); navigate("/auth"); }}
+          className="w-full mt-8 bg-red-600 hover:bg-red-700 py-2 rounded font-bold text-white"
+        >
+          Sair
+        </button>
       </div>
 
       <div className="flex-1 p-8">
