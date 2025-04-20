@@ -12,13 +12,13 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [contacts, setContacts] = useState([]);
   const [sessionAuthorized, setSessionAuthorized] = useState(false);
-  const [codeHash, setCodeHash] = useState(""); // Novo estado
+  const [codeHash, setCodeHash] = useState("");
   const navigate = useNavigate();
 
   const messageRef = useRef();
-  const typeRef = useRef();
   const fileRef = useRef();
   const telegramTokenRef = useRef();
+  const manualNumbersRef = useRef(); // 📌 campo novo
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
@@ -91,17 +91,25 @@ export default function Home() {
     const phone = telegramTokenRef.current.value;
     const message = messageRef.current.value;
     const file = fileRef.current.files[0];
+    const manualNumbers = manualNumbersRef.current?.value?.split("\n").map(n => n.trim()).filter(n => n) || [];
 
-    if (!contacts.length || !message || !phone) {
+    if (!message || !phone) {
       return alert("⚠️ Número, mensagem e contatos obrigatórios.");
     }
 
-    const recipientList = contacts.map(c => c.username || c.phone).join(",");
+    const allRecipients = [
+      ...contacts.map(c => c.username || c.phone),
+      ...manualNumbers
+    ].filter(Boolean);
+
+    if (allRecipients.length === 0) {
+      return alert("⚠️ Nenhum destinatário válido encontrado.");
+    }
 
     const formData = new FormData();
     formData.append("phone", phone);
     formData.append("message", message);
-    formData.append("recipients", recipientList);
+    formData.append("recipients", allRecipients.join(","));
     if (file) formData.append("file", file);
 
     const res = await fetch(`${API_URL}/send-broadcast`, {
@@ -187,6 +195,16 @@ export default function Home() {
               <button onClick={handleListContacts} className="bg-cyan-600 px-4 py-2 rounded text-white font-bold">
                 📇 Listar Contatos
               </button>
+            </div>
+
+            <div>
+              <h4 className="text-lg font-semibold mb-1">📄 Números externos (um por linha)</h4>
+              <textarea
+                ref={manualNumbersRef}
+                rows={4}
+                placeholder="+5599999999999"
+                className="w-full p-3 rounded bg-gray-800 text-white placeholder-gray-400 resize-none"
+              />
             </div>
 
             <textarea
