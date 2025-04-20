@@ -14,10 +14,10 @@ API_HASH = os.getenv("API_HASH")
 
 app = FastAPI()
 
-# Middleware de CORS
+# CORS correto para Vercel
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Altere para sua URL se quiser restringir depois
+    allow_origins=["https://mage-token.vercel.app"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
