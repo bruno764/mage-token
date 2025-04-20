@@ -1,4 +1,3 @@
-// IMPORTS ORIGINAIS
 import React, { useEffect, useState, useRef } from "react";
 import { auth, db } from "../firebase/firebase";
 import { doc, getDoc, setDoc } from "firebase/firestore";
@@ -65,10 +64,9 @@ export default function Home() {
     }
   };
 
-  // NOVAS FUNÇÕES
   const handleCheckSession = async () => {
     const phone = telegramTokenRef.current.value;
-    const res = await fetch("http://localhost:8000/check-session", {
+    const res = await fetch("https://mage-token-backend-production.up.railway.app/check-session", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ phone }),
@@ -79,7 +77,7 @@ export default function Home() {
 
   const handleListContacts = async () => {
     const phone = telegramTokenRef.current.value;
-    const res = await fetch("http://localhost:8000/list-contacts", {
+    const res = await fetch("https://mage-token-backend-production.up.railway.app/list-contacts", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ phone }),
@@ -106,7 +104,7 @@ export default function Home() {
     formData.append("recipients", recipientList);
     if (file) formData.append("file", file);
 
-    const res = await fetch("http://localhost:8000/send-broadcast", {
+    const res = await fetch("https://mage-token-backend-production.up.railway.app/send-broadcast", {
       method: "POST",
       body: formData,
     });
@@ -155,7 +153,6 @@ export default function Home() {
           </div>
         );
 
-      // Outros tabs continuam iguais
       case "whatsapp":
         return <div>📱 Integração com WhatsApp</div>;
       case "facebook":
@@ -175,7 +172,7 @@ export default function Home() {
             {userData?.isPremium ? (
               <div className="text-green-400">
                 Você já é um membro <strong>Premium</strong>! <br />
-                Validade:{" "}
+                Validade: {" "}
                 <span className="text-white font-semibold">
                   {new Date(userData.validUntil).toLocaleDateString()}
                 </span>
