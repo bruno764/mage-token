@@ -29,11 +29,12 @@ load_dotenv()
 _firebase_cred = os.getenv("FIREBASE_CRED")
 if not _firebase_cred:
     raise RuntimeError("Você precisa definir a variável FIREBASE_CRED")
-# se vier um JSON cru, parse; caso contrário, trata como caminho
 try:
+    # se a variável for um JSON bruto
     cred_payload = json.loads(_firebase_cred)
     cred = credentials.Certificate(cred_payload)
 except json.JSONDecodeError:
+    # senão, assume que é caminho para arquivo
     cred = credentials.Certificate(_firebase_cred)
 
 if not firebase_admin._apps:
@@ -77,7 +78,6 @@ async def perform_broadcast(
     file_key: str = None,
     job_id: str = None
 ):
-    # baixa arquivo do Supabase, se houver
     local_file = None
     if file_key:
         data = supabase.storage.from_(BUCKET).download(file_key)
@@ -101,7 +101,6 @@ async def perform_broadcast(
 
     await client.disconnect()
 
-    # marca como enviado no Firestore se veio de agendamento
     if job_id:
         firestore_db.collection("scheduled_broadcasts") \
             .document(job_id) \
@@ -115,14 +114,15 @@ async def perform_broadcast(
 
 # ─── RE-AGENDAMENTO NA INICIALIZAÇÃO ─────────────────────────────────────────
 app = FastAPI()
+
 @app.on_event("startup")
 async def load_scheduled_jobs():
     try:
         now = datetime.utcnow()
         snapshots = (
             firestore_db.collection("scheduled_broadcasts")
-            .where("status", "==", "pending")
-            .where("send_at", ">", now)
+            .where(filter=("status", "==", "pending"))
+            .where(filter=("send_at", ">", now))
             .get()
         )
         for doc in snapshots:
