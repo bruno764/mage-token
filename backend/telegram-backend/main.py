@@ -23,6 +23,7 @@ import firebase_admin
 from firebase_admin import credentials, firestore
 
 from dotenv import load_dotenv
+from fastapi import Query
 
 # ─── CARREGA VARIÁVEIS DE AMBIENTE ────────────────────────────────────────────
 load_dotenv()
@@ -307,8 +308,6 @@ async def schedule_broadcast(
         "send_at":  send_at.isoformat(),
         "file_key": file_key
     }
-
-from fastapi import Query
 
 @app.get("/broadcast-history")
 async def broadcast_history(limit: int = Query(default=100, lte=100)):
