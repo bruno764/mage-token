@@ -2,8 +2,8 @@ fastapi
 uvicorn
 python-dotenv
 telethon
-python-multipart
-APScheduler==3.10.1
-boto3==1.28.55
-supabase
+apscheduler==3.10.1
+supabase        # ou supabase-py, dependendo da sua import
 firebase-admin
+python-multipart
+boto3
