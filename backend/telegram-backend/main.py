@@ -1,10 +1,14 @@
-# 🔧 main.py
+# main.py
+
 from fastapi import FastAPI, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from telethon.sync import TelegramClient
 from telethon.tl.functions.contacts import GetContactsRequest
 from telethon.tl.types import User, Chat, Channel
+from datetime import datetime
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from apscheduler.triggers.date import DateTrigger
 import os
 import shutil
 from dotenv import load_dotenv
@@ -25,6 +29,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# inicializa scheduler
+scheduler = AsyncIOScheduler()
+scheduler.start()
+
 SESSION_DIR = "sessions"
 TEMP_DIR = "temp"
 os.makedirs(SESSION_DIR, exist_ok=True)
@@ -37,6 +45,12 @@ class VerifyCode(BaseModel):
     phone: str
     code: str
     phone_code_hash: str
+
+class ScheduleBroadcast(BaseModel):
+    phone: str
+    message: str
+    recipients: str
+    send_at: datetime
 
 @app.get("/")
 def root():
@@ -134,6 +148,27 @@ async def list_dialogs(data: PhoneNumber):
     except Exception as e:
         return {"error": str(e)}
 
+# helper para enviar broadcast imediato ou agendado
+async def perform_broadcast(phone: str, message: str, recipients: str, file_path: str = None):
+    client = TelegramClient(f"{SESSION_DIR}/{phone}", API_ID, API_HASH)
+    await client.connect()
+    recs = [r.strip() for r in recipients.split(",")]
+    for r in recs:
+        try:
+            # converte em int se for ID numérico (grupos)
+            try:
+                target = int(r) if (r.isdigit() or (r.startswith("-") and r[1:].isdigit())) else r
+            except:
+                target = r
+            entity = await client.get_entity(target)
+            if file_path:
+                await client.send_file(entity, file_path, caption=message)
+            else:
+                await client.send_message(entity, message)
+        except Exception as err:
+            print(f"❌ Erro ao enviar para {r}: {err}")
+    await client.disconnect()
+
 @app.post("/send")
 async def send_message(
     phone: str = Form(...),
@@ -145,7 +180,7 @@ async def send_message(
         client = TelegramClient(f"{SESSION_DIR}/{phone}", API_ID, API_HASH)
         await client.connect()
 
-        # Converte ID numérico em int para grupos
+        # trata recipient numérico para grupos
         try:
             target = int(recipient)
         except ValueError:
@@ -174,38 +209,33 @@ async def send_broadcast(
     recipients: str = Form(...),
     file: UploadFile = File(None)
 ):
-    try:
-        client = TelegramClient(f"{SESSION_DIR}/{phone}", API_ID, API_HASH)
-        await client.connect()
+    # mantém a mesma lógica de envio, agora via helper
+    file_path = None
+    if file:
+        file_path = f"{TEMP_DIR}/{file.filename}"
+        with open(file_path, "wb") as buf:
+            shutil.copyfileobj(file.file, buf)
 
-        recipients_list = [r.strip() for r in recipients.split(",")]
-        file_path = None
+    await perform_broadcast(phone, message, recipients, file_path)
 
-        if file:
-            file_path = f"{TEMP_DIR}/{file.filename}"
-            with open(file_path, "wb") as buffer:
-                shutil.copyfileobj(file.file, buffer)
+    if file_path:
+        os.remove(file_path)
 
-        for recipient in recipients_list:
-            try:
-                # Converte ID numérico em int para grupos
-                try:
-                    target = int(recipient)
-                except ValueError:
-                    target = recipient
+    return {"status": f"Broadcast enviado para {recipients} ✅"}
 
-                entity = await client.get_entity(target)
-                if file_path:
-                    await client.send_file(entity, file_path, caption=message)
-                else:
-                    await client.send_message(entity, message)
-            except Exception as err:
-                print(f"❌ Erro para {recipient}: {err}")
-
-        if file_path:
-            os.remove(file_path)
-
-        await client.disconnect()
-        return {"status": f"Broadcast enviado para {len(recipients_list)} contatos ✅"}
-    except Exception as e:
-        return {"error": str(e)}
+@app.post("/schedule-broadcast")
+async def schedule_broadcast(data: ScheduleBroadcast):
+    trigger = DateTrigger(run_date=data.send_at)
+    job_id = f"broadcast_{data.phone}_{data.send_at.isoformat()}"
+    scheduler.add_job(
+        perform_broadcast,
+        trigger=trigger,
+        args=[data.phone, data.message, data.recipients],
+        id=job_id,
+        replace_existing=True
+    )
+    return {
+        "status": "Broadcast agendado",
+        "job_id": job_id,
+        "send_at": data.send_at.isoformat()
+    }
