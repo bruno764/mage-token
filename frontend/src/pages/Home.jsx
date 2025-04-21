@@ -15,6 +15,7 @@ export default function Home() {
   const [contacts, setContacts] = useState({ users: [], groups: [] });
   const [selectedContacts, setSelectedContacts] = useState([]);
   const [sessionAuthorized, setSessionAuthorized] = useState(false);
+  const [sessionStatus, setSessionStatus] = useState("none"); // 'none' | 'active' | 'inactive'
   const [codeHash, setCodeHash] = useState("");
   const navigate = useNavigate();
 
@@ -68,15 +69,30 @@ export default function Home() {
 
   const handleCheckSession = async () => {
     const phone = telegramTokenRef.current.value;
-    const res = await fetch(`${API_URL}/check-session`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ phone }),
-    });
-    const result = await res.json();
-    setSessionAuthorized(result.authorized);
-    alert(result.authorized ? "✅ Sessão ATIVA" : "❌ Sessão INATIVA");
+    if (!phone) return alert("Informe o número.");
+  
+    try {
+      const res = await fetch(`${API_URL}/check-session`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone }),
+      });
+  
+      const result = await res.json();
+      if (result.authorized) {
+        setSessionStatus("active");
+        alert("✅ Sessão ATIVA");
+      } else {
+        setSessionStatus("inactive");
+        alert("❌ Sessão INATIVA");
+      }
+    } catch (err) {
+      console.error("Erro ao verificar sessão:", err);
+      setSessionStatus("none");
+      alert("Erro ao verificar sessão.");
+    }
   };
+  
 
   const handleListContacts = async () => {
     const phone = telegramTokenRef.current.value;
@@ -272,12 +288,25 @@ export default function Home() {
         )}
 
         <div className="flex gap-2 flex-wrap">
-          <button
-            onClick={handleCheckSession}
-            className="bg-purple-500 px-4 py-2 rounded text-white font-bold"
-          >
-            🔍 Verificar Sessão
-          </button>
+        <div className="flex items-center gap-2">
+  <button
+    onClick={handleCheckSession}
+    className="bg-purple-500 px-4 py-2 rounded text-white font-bold"
+  >
+    🔍 Verificar Sessão
+  </button>
+
+  {sessionStatus === "active" && (
+    <span className="text-green-400 font-bold">🟢 Ativa</span>
+  )}
+  {sessionStatus === "inactive" && (
+    <span className="text-red-400 font-bold">🔴 Inativa</span>
+  )}
+  {sessionStatus === "none" && (
+    <span className="text-gray-400 font-bold">⚪️ Desconhecida</span>
+  )}
+</div>
+
           <button
             onClick={handleListContacts}
             className="bg-cyan-600 px-4 py-2 rounded text-white font-bold"
@@ -405,18 +434,65 @@ export default function Home() {
           />
         </div>
 
-        {/* Mensagem e arquivo */}
-        <textarea
-          ref={messageRef}
-          rows={4}
-          placeholder="Escreva sua mensagem..."
-          className="w-full p-3 bg-gray-800 rounded text-white"
-        />
-        <input
-          ref={fileRef}
-          type="file"
-          className="w-full p-2 bg-gray-800 rounded"
-        />
+        {/* Mensagem */}
+<textarea
+  ref={messageRef}
+  rows={4}
+  placeholder="Escreva sua mensagem..."
+  className="w-full p-3 bg-gray-800 rounded text-white"
+/>
+
+{/* Templates de Mensagem */}
+<div className="space-y-2">
+  <h4 className="font-semibold">📂 Templates de Mensagem</h4>
+  <select
+    onChange={(e) => {
+      if (e.target.value) {
+        messageRef.current.value = e.target.value;
+      }
+    }}
+    className="w-full p-2 rounded bg-gray-800 text-white"
+  >
+    <option value="">-- Selecione um Template --</option>
+    {(JSON.parse(localStorage.getItem("templates") || "[]")).map((tpl, i) => (
+      <option key={i} value={tpl}>{tpl.substring(0, 50)}...</option>
+    ))}
+  </select>
+
+  <div className="flex gap-2">
+    <button
+      onClick={() => {
+        const text = messageRef.current.value.trim();
+        if (!text) return alert("⚠️ Mensagem vazia");
+        const current = JSON.parse(localStorage.getItem("templates") || "[]");
+        localStorage.setItem("templates", JSON.stringify([...current, text]));
+        alert("✅ Template salvo!");
+      }}
+      className="bg-blue-700 px-4 py-1 rounded text-white text-sm font-bold"
+    >
+      💾 Salvar Template Atual
+    </button>
+    <button
+      onClick={() => {
+        if (confirm("Tem certeza que deseja apagar todos os templates?")) {
+          localStorage.removeItem("templates");
+          alert("🗑️ Templates apagados");
+        }
+      }}
+      className="bg-red-700 px-4 py-1 rounded text-white text-sm font-bold"
+    >
+      🗑️ Apagar Todos
+    </button>
+  </div>
+</div>
+
+{/* Upload de arquivo */}
+<input
+  ref={fileRef}
+  type="file"
+  className="w-full p-2 bg-gray-800 rounded"
+/>
+
 
         {/* Botões de ação */}
         <div className="flex gap-4">
