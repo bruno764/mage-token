@@ -150,6 +150,7 @@ async def lifespan(app: FastAPI):
 # ─── FASTAPI & CORS ──────────────────────────────────────────────────────────
 origins = [
     "https://mage-token.vercel.app",
+    "https://mage-token-production.up.railway.app",
     "http://localhost:3000",
 ]
 app = FastAPI(lifespan=lifespan)
