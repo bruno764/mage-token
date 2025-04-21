@@ -19,8 +19,8 @@ load_dotenv()
 API_ID        = int(os.getenv("API_ID"))
 API_HASH      = os.getenv("API_HASH")
 SUPABASE_URL  = os.getenv("SUPABASE_URL")   # ex: https://xyzcompany.supabase.co
-SUPABASE_KEY  = os.getenv("SUPABASE_KEY")   # your anon/public or service_role key
-BUCKET        = os.getenv("SUPABASE_BUCKET")  # nome do bucket (ex: "broadcast-files")
+SUPABASE_KEY  = os.getenv("SUPABASE_KEY")   # service_role key
+BUCKET        = os.getenv("SUPABASE_BUCKET")  # ex: "broadcast-files"
 
 # inicializa Supabase client
 supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
@@ -61,6 +61,30 @@ class ScheduleBroadcast(BaseModel):
     message: str
     recipients: str
     send_at: datetime
+
+@app.on_event("startup")
+async def load_scheduled_jobs():
+    """Ao iniciar, puxa todos os broadcasts pendentes e re­agenda."""
+    resp = supabase \
+        .from_("scheduled_broadcasts") \
+        .select("*") \
+        .gt("send_at", datetime.utcnow().isoformat()) \
+        .eq("status", "pending") \
+        .execute()
+    for rec in resp.data:
+        trigger = DateTrigger(run_date=rec["send_at"])
+        scheduler.add_job(
+            perform_broadcast,
+            trigger=trigger,
+            args=[
+                rec["phone"],
+                rec["message"],
+                rec["recipients"],
+                rec.get("file_key")
+            ],
+            id=rec["id"],
+            replace_existing=True
+        )
 
 @app.get("/")
 def root():
@@ -162,9 +186,9 @@ async def perform_broadcast(
     recipients: str,
     file_key: str = None
 ):
+    # baixa arquivo do Supabase Storage para temp, se houver:
     local_file = None
     if file_key:
-        # baixa arquivo do Supabase Storage para temp
         data = supabase.storage.from_(BUCKET).download(file_key)
         local_file = os.path.join(TEMP_DIR, os.path.basename(file_key))
         with open(local_file, "wb") as f:
@@ -188,6 +212,13 @@ async def perform_broadcast(
             print(f"❌ Erro ao enviar para {r}: {err}")
     await client.disconnect()
 
+    # marca como enviado no Supabase
+    supabase \
+      .from_("scheduled_broadcasts") \
+      .update({"status": "sent"}) \
+      .eq("id", scheduler.get_job().id) \
+      .execute()
+
     if local_file and os.path.exists(local_file):
         os.remove(local_file)
 
@@ -204,7 +235,6 @@ async def send_message(
         file_key = f"immediate/{uuid4().hex}_{file.filename}"
         supabase.storage.from_(BUCKET).upload(file_key, data)
 
-    # para envio único, treatamos 'recipient' como lista de um
     await perform_broadcast(phone, message, recipient, file_key)
     return {"status": f"Mensagem enviada para {recipient} ✅"}
 
@@ -241,8 +271,22 @@ async def schedule_broadcast(
         file_key = f"scheduled/{uuid4().hex}_{file.filename}"
         supabase.storage.from_(BUCKET).upload(file_key, data)
 
+    # insere no Postgres do Supabase
+    insert = supabase.from_("scheduled_broadcasts").insert({
+        "id": uuid4().hex,
+        "phone": phone,
+        "message": message,
+        "recipients": recipients,
+        "file_key": file_key,
+        "send_at": send_at.isoformat(),
+        "status": "pending"
+    }).execute()
+
+    rec = insert.data[0]
+    job_id = rec["id"]
+
+    # agenda no APScheduler
     trigger = DateTrigger(run_date=send_at)
-    job_id = f"broadcast_{phone}_{send_at.isoformat()}"
     scheduler.add_job(
         perform_broadcast,
         trigger=trigger,
