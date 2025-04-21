@@ -4,7 +4,7 @@ import os
 import json
 import shutil
 from uuid import uuid4
-from datetime import datetime
+from datetime import datetime, timezone
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException
@@ -273,7 +273,7 @@ async def schedule_broadcast(
     send_at: datetime = Form(...),
     file: UploadFile = File(None)
 ):
-    if send_at.replace(tzinfo=None) <= datetime.utcnow():
+    if send_at <= datetime.now(timezone.utc):
         raise HTTPException(status_code=400, detail="send_at deve ser no futuro")
 
     file_key = None
