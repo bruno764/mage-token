@@ -59,9 +59,9 @@ export default function Home() {
       }
     };
   
-    if (activeTab === "telegram") {
+    if (activeTab === "telegram" && telegramTokenRef.current?.value) {
       fetchBroadcastHistory();
-    }
+    }    
   }, [activeTab]);
   
   
@@ -267,6 +267,21 @@ export default function Home() {
           ref={telegramTokenRef}
           className="w-full p-3 rounded bg-gray-800 text-white placeholder-gray-400"
         />
+        <button
+  onClick={() => {
+    const phone = telegramTokenRef.current?.value;
+    if (phone) {
+      fetch(`${API_URL}/broadcast-history?phone=${phone}`)
+        .then((res) => res.json())
+        .then((json) => setBroadcastHistory(json.items || []))
+        .catch(() => alert("Erro ao atualizar histórico"));
+    }
+  }}
+  className="bg-gray-600 px-4 py-2 rounded text-white font-bold mt-2"
+>
+  🔄 Atualizar Histórico
+</button>
+
 
         <button
   onClick={handleEnviarCodigo}
