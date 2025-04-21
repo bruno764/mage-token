@@ -1,6 +1,7 @@
 # main.py
 
 import os
+import json
 import shutil
 from uuid import uuid4
 from datetime import datetime
@@ -26,8 +27,19 @@ from dotenv import load_dotenv
 # ─── CARREGA VARIÁVEIS DE AMBIENTE ────────────────────────────────────────────
 load_dotenv()
 
-# ─── INICIALIZAÇÃO DO FIREBASE ────────────────────────────────────────────────
-cred = credentials.Certificate(os.getenv("FIREBASE_CRED"))
+# ─── INICIALIZAÇÃO DO FIREBASE (path ou JSON na ENV) ──────────────────────────
+raw_cred = os.getenv("FIREBASE_CRED")
+if not raw_cred:
+    raise RuntimeError("A variável de ambiente FIREBASE_CRED não está definida.")
+
+try:
+    # tenta interpretar como JSON
+    cred_dict = json.loads(raw_cred)
+    cred = credentials.Certificate(cred_dict)
+except json.JSONDecodeError:
+    # se não for JSON, assume que raw_cred é um path
+    cred = credentials.Certificate(raw_cred)
+
 if not firebase_admin._apps:
     firebase_admin.initialize_app(cred)
 firestore_db = firestore.client()
@@ -43,10 +55,10 @@ TEMP_DIR = "temp"
 os.makedirs(TEMP_DIR, exist_ok=True)
 
 # ─── CONFIGURAÇÃO DO SUPABASE ─────────────────────────────────────────────────
-SUPABASE_URL   = os.getenv("SUPABASE_URL")
-SUPABASE_KEY   = os.getenv("SUPABASE_KEY")
-BUCKET         = os.getenv("SUPABASE_BUCKET")
-supabase       = create_client(SUPABASE_URL, SUPABASE_KEY)
+SUPABASE_URL = os.getenv("SUPABASE_URL")
+SUPABASE_KEY = os.getenv("SUPABASE_KEY")
+BUCKET       = os.getenv("SUPABASE_BUCKET")
+supabase     = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 # ─── AGENDADOR ───────────────────────────────────────────────────────────────
 scheduler = AsyncIOScheduler()
@@ -135,7 +147,7 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         print(f"⚠️ Não foi possível carregar agendamentos: {e}")
     yield
-    # aqui poderia vir código de shutdown, se necessário
+    # shutdown: (se precisar de algo no final, viria aqui)
 
 # ─── FASTAPI & CORS ──────────────────────────────────────────────────────────
 origins = [
@@ -163,7 +175,6 @@ async def start_login(data: PhoneNumber):
     try:
         result = await client.send_code_request(data.phone)
     except FloodWaitError as e:
-        # e.seconds é o tempo em segundos que o usuário deve aguardar
         await client.disconnect()
         raise HTTPException(
             status_code=429,
