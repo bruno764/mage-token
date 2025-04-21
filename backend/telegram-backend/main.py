@@ -33,11 +33,9 @@ if not raw_cred:
     raise RuntimeError("A variável de ambiente FIREBASE_CRED não está definida.")
 
 try:
-    # tenta interpretar como JSON
     cred_dict = json.loads(raw_cred)
     cred = credentials.Certificate(cred_dict)
 except json.JSONDecodeError:
-    # se não for JSON, assume que raw_cred é um path
     cred = credentials.Certificate(raw_cred)
 
 if not firebase_admin._apps:
@@ -122,8 +120,8 @@ async def lifespan(app: FastAPI):
     try:
         docs = (
             firestore_db.collection("scheduled_broadcasts")
-            .where("status", "==", "pending")
-            .where("send_at", ">", now)
+            .where(field_path="status", op_string="==", value="pending")
+            .where(field_path="send_at", op_string=">", value=now)
             .stream()
         )
         for doc in docs:
@@ -147,7 +145,7 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         print(f"⚠️ Não foi possível carregar agendamentos: {e}")
     yield
-    # shutdown: (se precisar de algo no final, viria aqui)
+    # shutdown: se precisar de algo extra, coloque aqui
 
 # ─── FASTAPI & CORS ──────────────────────────────────────────────────────────
 origins = [
