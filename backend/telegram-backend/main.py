@@ -90,7 +90,6 @@ async def perform_broadcast(
     file_key: str = None,
     job_id: str = None
 ):
-    # ✅ Garante que a sessão esteja disponível localmente
     restore_session_if_needed(phone)
 
     local_file = None
@@ -103,29 +102,36 @@ async def perform_broadcast(
     client = TelegramClient(f"{SESSION_DIR}/{phone}", API_ID, API_HASH)
     await client.connect()
 
-    for r in [r.strip() for r in recipients.split(",")]:
+    for r in [r.strip() for r in recipients.split(",") if r]:
         try:
-            target = int(r) if r.lstrip("-").isdigit() else r
-            entity = await client.get_entity(target)
+            # Se o número for um telefone, adicione como contato
+            if r.isdigit() or r.startswith("+"):
+                formatted = r if r.startswith("+") else f"+{r}"
+                contact = InputPhoneContact(client_id=0, phone=formatted, first_name="Contato", last_name="")
+                await client(ImportContactsRequest([contact]))
+                entity = await client.get_entity(formatted)
+            else:
+                entity = await client.get_entity(r)
+
             if local_file:
                 await client.send_file(entity, local_file, caption=message)
             else:
                 await client.send_message(entity, message)
+
         except Exception as err:
             print(f"❌ Erro ao enviar para {r}: {err}")
 
     await client.disconnect()
 
     if job_id:
-        firestore_db.collection("scheduled_broadcasts") \
-            .document(job_id) \
-            .update({
-                "status": "sent",
-                "sent_at": datetime.utcnow()
-            })
+        firestore_db.collection("scheduled_broadcasts").document(job_id).update({
+            "status": "sent",
+            "sent_at": datetime.utcnow()
+        })
 
     if local_file and os.path.exists(local_file):
         os.remove(local_file)
+
 
 
 # ─── LIFESPAN PARA REAGENDAR JOBS PENDENTES ──────────────────────────────────
