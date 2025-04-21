@@ -185,42 +185,39 @@ export default function Home() {
         .split("\n")
         .map((n) => n.trim())
         .filter(Boolean) || [];
-
+  
     if (!message || !phone || !scheduledAt) {
-      return alert(
-        "⚠️ Número, mensagem, contatos e data de agendamento obrigatórios."
-      );
+      return alert("⚠️ Número, mensagem, contatos e data de agendamento obrigatórios.");
     }
-    const allRecipients = [...selectedContacts, ...manualNumbers].filter(
-      Boolean
-    );
+  
+    const allRecipients = [...selectedContacts, ...manualNumbers].filter(Boolean);
     if (allRecipients.length === 0) {
       return alert("⚠️ Nenhum destinatário válido encontrado.");
     }
-
+  
+    // ✅ Converte para UTC
+    const utcScheduledAt = new Date(scheduledAt).toISOString();
+  
     const formData = new FormData();
     formData.append("phone", phone);
     formData.append("message", message);
     formData.append("recipients", allRecipients.join(","));
-    formData.append("send_at", scheduledAt);
+    formData.append("send_at", utcScheduledAt); // 👈 aqui vai em UTC
     if (file) formData.append("file", file);
-
+  
     const res = await fetch(`${API_URL}/schedule-broadcast`, {
       method: "POST",
       body: formData,
     });
     const result = await res.json();
     if (result.job_id) {
-      alert(
-        `⏰ Envio agendado para ${new Date(
-          scheduledAt
-        ).toLocaleString()}`
-      );
+      alert(`⏰ Envio agendado para ${new Date(scheduledAt).toLocaleString()}`);
       setScheduledAt("");
     } else {
       alert(result.detail || result.error);
     }
   };
+  
 
   const handleEnviarCodigo = async () => {
     const phone = telegramTokenRef.current.value;
