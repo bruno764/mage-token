@@ -107,18 +107,22 @@ async def perform_broadcast(
 
     for r in [r.strip() for r in recipients.split(",") if r]:
         try:
-            # Verifica tipo de destinatário
-            if r.startswith("-100"):  # grupo ou canal
-                entity = await client.get_entity(int(r))
-            elif r.startswith("+") or r.lstrip("+").isdigit():  # número de telefone
+            # 🟢 Grupos/canais normalmente começam com "-" e são IDs numéricos
+            if r.lstrip("-").isdigit():
+                entity = await client.get_input_entity(int(r))
+            
+            # 📱 Número de telefone — importa como contato
+            elif r.startswith("+") or r.replace("+", "").isdigit():
                 formatted = r if r.startswith("+") else f"+{r}"
                 contact = InputPhoneContact(client_id=0, phone=formatted, first_name="Contato", last_name="")
                 await client(ImportContactsRequest([contact]))
-                entity = await client.get_entity(formatted)
-            else:  # username ou outro ID
-                entity = await client.get_entity(r)
+                entity = await client.get_input_entity(formatted)
 
-            # Envia mensagem ou arquivo
+            # 🌐 Username direto (@exemplo)
+            else:
+                entity = await client.get_input_entity(r)
+
+            # 📤 Envia mensagem ou arquivo
             if local_file:
                 await client.send_file(entity, local_file, caption=message)
             else:
@@ -130,6 +134,7 @@ async def perform_broadcast(
                 firestore_db.collection("scheduled_broadcasts").document(job_id).update({
                     f"errors.{r}": str(err)
                 })
+
 
     await client.disconnect()
 
