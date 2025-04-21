@@ -18,6 +18,9 @@ from telethon.sync import TelegramClient
 from telethon.errors.rpcerrorlist import FloodWaitError
 from telethon.tl.functions.contacts import GetContactsRequest
 from telethon.tl.types import User, Chat, Channel
+from telethon.tl.functions.contacts import ImportContactsRequest
+from telethon.tl.types import InputPhoneContact
+
 
 from supabase import create_client
 import firebase_admin
@@ -121,6 +124,11 @@ async def perform_broadcast(
         except Exception as err:
             print(f"❌ Erro ao enviar para {r}: {err}")
 
+            if job_id:
+                firestore_db.collection("scheduled_broadcasts").document(job_id).update({
+                    f"errors.{r}": str(err)
+                })
+
     await client.disconnect()
 
     if job_id:
@@ -131,8 +139,6 @@ async def perform_broadcast(
 
     if local_file and os.path.exists(local_file):
         os.remove(local_file)
-
-
 
 # ─── LIFESPAN PARA REAGENDAR JOBS PENDENTES ──────────────────────────────────
 @asynccontextmanager
