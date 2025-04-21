@@ -1,53 +1,67 @@
 # main.py
+
+import os
+import shutil
+from uuid import uuid4
+from datetime import datetime
+
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from apscheduler.triggers.date import DateTrigger
+
 from telethon.sync import TelegramClient
 from telethon.tl.functions.contacts import GetContactsRequest
 from telethon.tl.types import User, Chat, Channel
-from datetime import datetime
-from apscheduler.schedulers.asyncio import AsyncIOScheduler
-from apscheduler.triggers.date import DateTrigger
+
 from supabase import create_client
-from uuid import uuid4
-import os
-import shutil
+import firebase_admin
+from firebase_admin import credentials, firestore
+
 from dotenv import load_dotenv
 
 load_dotenv()
 
-API_ID        = int(os.getenv("API_ID"))
-API_HASH      = os.getenv("API_HASH")
-SUPABASE_URL  = os.getenv("SUPABASE_URL")   # ex: https://xyzcompany.supabase.co
-SUPABASE_KEY  = os.getenv("SUPABASE_KEY")   # service_role key
-BUCKET        = os.getenv("SUPABASE_BUCKET")  # ex: "broadcast-files"
+# ─── TELEGRAM CONFIG ─────────────────────────────────────────────────────────
+API_ID      = int(os.getenv("API_ID"))
+API_HASH    = os.getenv("API_HASH")
+SESSION_DIR = "sessions"
+os.makedirs(SESSION_DIR, exist_ok=True)
 
-# inicializa Supabase client
-supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
+# ─── TEMP STORAGE ─────────────────────────────────────────────────────────────
+TEMP_DIR = "temp"
+os.makedirs(TEMP_DIR, exist_ok=True)
 
+# ─── SUPABASE STORAGE ─────────────────────────────────────────────────────────
+SUPABASE_URL   = os.getenv("SUPABASE_URL")     # e.g. https://xyzcompany.supabase.co
+SUPABASE_KEY   = os.getenv("SUPABASE_KEY")     # service_role key
+BUCKET         = os.getenv("SUPABASE_BUCKET")  # e.g. "broadcast-files"
+supabase       = create_client(SUPABASE_URL, SUPABASE_KEY)
+
+# ─── FIRESTORE CONFIG ─────────────────────────────────────────────────────────
+cred = credentials.Certificate(os.getenv("FIREBASE_CRED"))
+firebase_admin.initialize_app(cred)
+firestore_db = firestore.client()
+
+# ─── FASTAPI & CORS ──────────────────────────────────────────────────────────
 app = FastAPI()
-
-# 🔐 CORS para frontend
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "https://mage-token-production.up.railway.app",
-        "https://mage-token.vercel.app"
+        "https://mage-token.vercel.app",
     ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# scheduler
+# ─── SCHEDULER ────────────────────────────────────────────────────────────────
 scheduler = AsyncIOScheduler()
 scheduler.start()
 
-SESSION_DIR = "sessions"
-TEMP_DIR    = "temp"
-os.makedirs(SESSION_DIR, exist_ok=True)
-os.makedirs(TEMP_DIR, exist_ok=True)
-
+# ─── DATA MODELS ──────────────────────────────────────────────────────────────
 class PhoneNumber(BaseModel):
     phone: str
 
@@ -56,137 +70,15 @@ class VerifyCode(BaseModel):
     code: str
     phone_code_hash: str
 
-class ScheduleBroadcast(BaseModel):
-    phone: str
-    message: str
-    recipients: str
-    send_at: datetime
-
-@app.on_event("startup")
-async def load_scheduled_jobs():
-    """Ao iniciar, puxa todos os broadcasts pendentes e re­agenda."""
-    resp = supabase \
-        .from_("scheduled_broadcasts") \
-        .select("*") \
-        .gt("send_at", datetime.utcnow().isoformat()) \
-        .eq("status", "pending") \
-        .execute()
-    for rec in resp.data:
-        trigger = DateTrigger(run_date=rec["send_at"])
-        scheduler.add_job(
-            perform_broadcast,
-            trigger=trigger,
-            args=[
-                rec["phone"],
-                rec["message"],
-                rec["recipients"],
-                rec.get("file_key")
-            ],
-            id=rec["id"],
-            replace_existing=True
-        )
-
-@app.get("/")
-def root():
-    return {"status": "Servidor ativo com Telethon ✅"}
-
-@app.post("/start-login")
-async def start_login(data: PhoneNumber):
-    try:
-        client = TelegramClient(f"{SESSION_DIR}/{data.phone}", API_ID, API_HASH)
-        await client.connect()
-        result = await client.send_code_request(data.phone)
-        await client.disconnect()
-        return {
-            "status": "Código enviado com sucesso",
-            "phone_code_hash": result.phone_code_hash
-        }
-    except Exception as e:
-        return {"error": str(e)}
-
-@app.post("/verify-code")
-async def verify_code(data: VerifyCode):
-    try:
-        client = TelegramClient(f"{SESSION_DIR}/{data.phone}", API_ID, API_HASH)
-        await client.connect()
-        await client.sign_in(
-            phone=data.phone,
-            code=data.code,
-            phone_code_hash=data.phone_code_hash
-        )
-        await client.disconnect()
-        return {"status": "Login concluído e sessão salva com sucesso ✅"}
-    except Exception as e:
-        return {"error": str(e)}
-
-@app.post("/check-session")
-async def check_session(data: PhoneNumber):
-    try:
-        client = TelegramClient(f"{SESSION_DIR}/{data.phone}", API_ID, API_HASH)
-        await client.connect()
-        authorized = await client.is_user_authorized()
-        await client.disconnect()
-        return {"authorized": authorized}
-    except Exception as e:
-        return {"error": str(e)}
-
-@app.post("/list-contacts")
-async def list_contacts(data: PhoneNumber):
-    try:
-        client = TelegramClient(f"{SESSION_DIR}/{data.phone}", API_ID, API_HASH)
-        await client.connect()
-        result = await client(GetContactsRequest(hash=0))
-        contacts = [
-            {
-                "id": user.id,
-                "username": user.username,
-                "phone": user.phone,
-                "first_name": user.first_name,
-                "last_name": user.last_name
-            }
-            for user in result.users if isinstance(user, User)
-        ]
-        await client.disconnect()
-        return {"contacts": contacts}
-    except Exception as e:
-        return {"error": str(e)}
-
-@app.post("/list-dialogs")
-async def list_dialogs(data: PhoneNumber):
-    try:
-        client = TelegramClient(f"{SESSION_DIR}/{data.phone}", API_ID, API_HASH)
-        await client.connect()
-        dialogs = await client.get_dialogs()
-        resultado = []
-        for dlg in dialogs:
-            ent = dlg.entity
-            if isinstance(ent, (Chat, Channel)):
-                if getattr(ent, "broadcast", False):
-                    tipo = "channel"
-                elif getattr(ent, "megagroup", False):
-                    tipo = "supergroup"
-                else:
-                    tipo = "group"
-                resultado.append({
-                    "chat": {
-                        "id": ent.id,
-                        "title": getattr(ent, "title", None),
-                        "type": tipo
-                    }
-                })
-        await client.disconnect()
-        return {"dialogs": resultado}
-    except Exception as e:
-        return {"error": str(e)}
-
-# helper para broadcast imediato ou agendado
+# ─── BROADCAST HELPER ─────────────────────────────────────────────────────────
 async def perform_broadcast(
     phone: str,
     message: str,
     recipients: str,
-    file_key: str = None
+    file_key: str = None,
+    job_id: str = None
 ):
-    # baixa arquivo do Supabase Storage para temp, se houver:
+    # download file from Supabase storage if provided
     local_file = None
     if file_key:
         data = supabase.storage.from_(BUCKET).download(file_key)
@@ -196,13 +88,11 @@ async def perform_broadcast(
 
     client = TelegramClient(f"{SESSION_DIR}/{phone}", API_ID, API_HASH)
     await client.connect()
+
     recs = [r.strip() for r in recipients.split(",")]
     for r in recs:
         try:
-            try:
-                target = int(r)
-            except ValueError:
-                target = r
+            target = int(r) if r.lstrip("-").isdigit() else r
             entity = await client.get_entity(target)
             if local_file:
                 await client.send_file(entity, local_file, caption=message)
@@ -210,33 +100,122 @@ async def perform_broadcast(
                 await client.send_message(entity, message)
         except Exception as err:
             print(f"❌ Erro ao enviar para {r}: {err}")
+
     await client.disconnect()
 
-    # marca como enviado no Supabase
-    supabase \
-      .from_("scheduled_broadcasts") \
-      .update({"status": "sent"}) \
-      .eq("id", scheduler.get_job().id) \
-      .execute()
+    # if this was a scheduled job, mark it as sent in Firestore
+    if job_id:
+        firestore_db.collection("scheduled_broadcasts") \
+            .document(job_id) \
+            .update({
+                "status": "sent",
+                "sent_at": datetime.utcnow()
+            })
 
     if local_file and os.path.exists(local_file):
         os.remove(local_file)
 
-@app.post("/send")
-async def send_message(
-    phone: str = Form(...),
-    recipient: str = Form(...),
-    message: str = Form(...),
-    file: UploadFile = File(None)
-):
-    file_key = None
-    if file:
-        data = await file.read()
-        file_key = f"immediate/{uuid4().hex}_{file.filename}"
-        supabase.storage.from_(BUCKET).upload(file_key, data)
+# ─── RE-SCHEDULE PENDING JOBS ON STARTUP ─────────────────────────────────────
+@app.on_event("startup")
+async def load_scheduled_jobs():
+    now = datetime.utcnow()
+    docs = (
+        firestore_db.collection("scheduled_broadcasts")
+        .where("status", "==", "pending")
+        .where("send_at", ">", now)
+        .stream()
+    )
+    for doc in docs:
+        rec = doc.to_dict()
+        job_id = doc.id
+        trigger = DateTrigger(run_date=rec["send_at"])
+        scheduler.add_job(
+            perform_broadcast,
+            trigger=trigger,
+            args=[
+                rec["phone"],
+                rec["message"],
+                rec["recipients"],
+                rec.get("file_key"),
+                job_id
+            ],
+            id=job_id,
+            replace_existing=True
+        )
 
-    await perform_broadcast(phone, message, recipient, file_key)
-    return {"status": f"Mensagem enviada para {recipient} ✅"}
+# ─── ENDPOINTS ────────────────────────────────────────────────────────────────
+@app.get("/")
+def root():
+    return {"status": "Servidor ativo com Telethon ✅"}
+
+@app.post("/start-login")
+async def start_login(data: PhoneNumber):
+    client = TelegramClient(f"{SESSION_DIR}/{data.phone}", API_ID, API_HASH)
+    await client.connect()
+    result = await client.send_code_request(data.phone)
+    await client.disconnect()
+    return {
+        "status": "Código enviado com sucesso",
+        "phone_code_hash": result.phone_code_hash
+    }
+
+@app.post("/verify-code")
+async def verify_code(data: VerifyCode):
+    client = TelegramClient(f"{SESSION_DIR}/{data.phone}", API_ID, API_HASH)
+    await client.connect()
+    await client.sign_in(
+        phone=data.phone,
+        code=data.code,
+        phone_code_hash=data.phone_code_hash
+    )
+    await client.disconnect()
+    return {"status": "Login concluído e sessão salva com sucesso ✅"}
+
+@app.post("/check-session")
+async def check_session(data: PhoneNumber):
+    client = TelegramClient(f"{SESSION_DIR}/{data.phone}", API_ID, API_HASH)
+    await client.connect()
+    authorized = await client.is_user_authorized()
+    await client.disconnect()
+    return {"authorized": authorized}
+
+@app.post("/list-contacts")
+async def list_contacts(data: PhoneNumber):
+    client = TelegramClient(f"{SESSION_DIR}/{data.phone}", API_ID, API_HASH)
+    await client.connect()
+    result = await client(GetContactsRequest(hash=0))
+    await client.disconnect()
+    return {"contacts": [
+        {
+            "id": user.id,
+            "username": user.username,
+            "phone": user.phone,
+            "first_name": user.first_name,
+            "last_name": user.last_name
+        }
+        for user in result.users if isinstance(user, User)
+    ]}
+
+@app.post("/list-dialogs")
+async def list_dialogs(data: PhoneNumber):
+    client = TelegramClient(f"{SESSION_DIR}/{data.phone}", API_ID, API_HASH)
+    await client.connect()
+    dialogs = await client.get_dialogs()
+    await client.disconnect()
+    resultado = []
+    for dlg in dialogs:
+        ent = dlg.entity
+        if isinstance(ent, (Chat, Channel)):
+            if getattr(ent, "broadcast", False):
+                tipo = "channel"
+            elif getattr(ent, "megagroup", False):
+                tipo = "supergroup"
+            else:
+                tipo = "group"
+            resultado.append({
+                "chat": {"id": ent.id, "title": getattr(ent, "title", None), "type": tipo}
+            })
+    return {"dialogs": resultado}
 
 @app.post("/send-broadcast")
 async def send_broadcast(
@@ -247,11 +226,12 @@ async def send_broadcast(
 ):
     file_key = None
     if file:
-        data = await file.read()
+        raw = await file.read()
         file_key = f"immediate/{uuid4().hex}_{file.filename}"
-        supabase.storage.from_(BUCKET).upload(file_key, data)
+        supabase.storage.from_(BUCKET).upload(file_key, raw)
 
-    await perform_broadcast(phone, message, recipients, file_key)
+    # immediate send, no job_id
+    await perform_broadcast(phone, message, recipients, file_key, job_id=None)
     return {"status": f"Broadcast enviado para {recipients} ✅"}
 
 @app.post("/schedule-broadcast")
@@ -267,37 +247,35 @@ async def schedule_broadcast(
 
     file_key = None
     if file:
-        data = await file.read()
+        raw = await file.read()
         file_key = f"scheduled/{uuid4().hex}_{file.filename}"
-        supabase.storage.from_(BUCKET).upload(file_key, data)
+        supabase.storage.from_(BUCKET).upload(file_key, raw)
 
-    # insere no Postgres do Supabase
-    insert = supabase.from_("scheduled_broadcasts").insert({
-        "id": uuid4().hex,
-        "phone": phone,
-        "message": message,
+    # generate job ID and save to Firestore
+    job_id = uuid4().hex
+    firestore_db.collection("scheduled_broadcasts").document(job_id).set({
+        "phone":      phone,
+        "message":    message,
         "recipients": recipients,
-        "file_key": file_key,
-        "send_at": send_at.isoformat(),
-        "status": "pending"
-    }).execute()
+        "file_key":   file_key,
+        "send_at":    send_at,
+        "status":     "pending",
+        "created_at": datetime.utcnow()
+    })
 
-    rec = insert.data[0]
-    job_id = rec["id"]
-
-    # agenda no APScheduler
+    # schedule via APScheduler
     trigger = DateTrigger(run_date=send_at)
     scheduler.add_job(
         perform_broadcast,
         trigger=trigger,
-        args=[phone, message, recipients, file_key],
+        args=[phone, message, recipients, file_key, job_id],
         id=job_id,
         replace_existing=True
     )
 
     return {
-        "status":  "Broadcast agendado",
-        "job_id":  job_id,
-        "send_at": send_at.isoformat(),
+        "status":   "Broadcast agendado",
+        "job_id":   job_id,
+        "send_at":  send_at.isoformat(),
         "file_key": file_key
     }
