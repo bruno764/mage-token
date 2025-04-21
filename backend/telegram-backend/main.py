@@ -307,3 +307,19 @@ async def schedule_broadcast(
         "send_at":  send_at.isoformat(),
         "file_key": file_key
     }
+
+from fastapi import Query
+
+@app.get("/broadcast-history")
+async def broadcast_history(limit: int = Query(default=100, lte=100)):
+    try:
+        docs = (
+            firestore_db.collection("scheduled_broadcasts")
+            .order_by("send_at", direction=firestore.Query.DESCENDING)
+            .limit(limit)
+            .stream()
+        )
+        items = [doc.to_dict() for doc in docs]
+        return {"items": items}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erro ao buscar histórico: {str(e)}")
