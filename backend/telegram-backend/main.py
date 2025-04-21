@@ -273,7 +273,7 @@ async def schedule_broadcast(
     send_at: datetime = Form(...),
     file: UploadFile = File(None)
 ):
-    if send_at <= datetime.utcnow():
+    if send_at.replace(tzinfo=None) <= datetime.utcnow():
         raise HTTPException(status_code=400, detail="send_at deve ser no futuro")
 
     file_key = None
