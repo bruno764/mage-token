@@ -3,4 +3,5 @@ uvicorn
 python-dotenv
 telethon
 python-multipart
+APScheduler==3.10.1
     
