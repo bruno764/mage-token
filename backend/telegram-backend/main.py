@@ -3,6 +3,7 @@
 import os
 import json
 import shutil
+import base64
 from uuid import uuid4
 from datetime import datetime, timezone
 from contextlib import asynccontextmanager
@@ -200,8 +201,6 @@ async def start_login(data: PhoneNumber):
         "status": "Código enviado com sucesso",
         "phone_code_hash": result.phone_code_hash
     }
-
-import base64
 
 @app.post("/verify-code")
 async def verify_code(data: VerifyCode):
