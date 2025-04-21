@@ -43,6 +43,15 @@ if not firebase_admin._apps:
     firebase_admin.initialize_app(cred)
 firestore_db = firestore.client()
 
+def restore_session_if_needed(phone: str):
+    session_file = f"{SESSION_DIR}/{phone}.session"
+    if not os.path.exists(session_file):
+        doc = firestore_db.collection("telegram_sessions").document(phone).get()
+        if doc.exists:
+            data = doc.to_dict()
+            with open(session_file, "wb") as f:
+                f.write(base64.b64decode(data["session_data"]))
+
 # ─── CONFIGURAÇÃO DO TELEGRAM ─────────────────────────────────────────────────
 API_ID      = int(os.getenv("API_ID"))
 API_HASH    = os.getenv("API_HASH")
@@ -80,6 +89,9 @@ async def perform_broadcast(
     file_key: str = None,
     job_id: str = None
 ):
+    # ✅ Garante que a sessão esteja disponível localmente
+    restore_session_if_needed(phone)
+
     local_file = None
     if file_key:
         data = supabase.storage.from_(BUCKET).download(file_key)
@@ -113,6 +125,7 @@ async def perform_broadcast(
 
     if local_file and os.path.exists(local_file):
         os.remove(local_file)
+
 
 # ─── LIFESPAN PARA REAGENDAR JOBS PENDENTES ──────────────────────────────────
 @asynccontextmanager
@@ -171,6 +184,7 @@ def root():
 
 @app.post("/start-login")
 async def start_login(data: PhoneNumber):
+    restore_session_if_needed(data.phone)
     client = TelegramClient(f"{SESSION_DIR}/{data.phone}", API_ID, API_HASH)
     await client.connect()
     try:
@@ -187,20 +201,35 @@ async def start_login(data: PhoneNumber):
         "phone_code_hash": result.phone_code_hash
     }
 
+import base64
+
 @app.post("/verify-code")
 async def verify_code(data: VerifyCode):
-    client = TelegramClient(f"{SESSION_DIR}/{data.phone}", API_ID, API_HASH)
+    restore_session_if_needed(data.phone)
+    session_path = f"{SESSION_DIR}/{data.phone}"
+    client = TelegramClient(session_path, API_ID, API_HASH)
     await client.connect()
     await client.sign_in(
         phone=data.phone,
         code=data.code,
         phone_code_hash=data.phone_code_hash
     )
+
+    # 🔐 Salva sessão no Firestore
+    with open(session_path + ".session", "rb") as f:
+        encoded = base64.b64encode(f.read()).decode("utf-8")
+        firestore_db.collection("telegram_sessions").document(data.phone).set({
+            "session_data": encoded,
+            "updated_at": datetime.utcnow()
+        })
+
     await client.disconnect()
     return {"status": "Login concluído e sessão salva com sucesso ✅"}
 
+
 @app.post("/check-session")
 async def check_session(data: PhoneNumber):
+    restore_session_if_needed(data.phone)
     client = TelegramClient(f"{SESSION_DIR}/{data.phone}", API_ID, API_HASH)
     await client.connect()
     authorized = await client.is_user_authorized()
@@ -209,6 +238,7 @@ async def check_session(data: PhoneNumber):
 
 @app.post("/list-contacts")
 async def list_contacts(data: PhoneNumber):
+    restore_session_if_needed(data.phone)
     client = TelegramClient(f"{SESSION_DIR}/{data.phone}", API_ID, API_HASH)
     await client.connect()
     result = await client(GetContactsRequest(hash=0))
@@ -226,6 +256,7 @@ async def list_contacts(data: PhoneNumber):
 
 @app.post("/list-dialogs")
 async def list_dialogs(data: PhoneNumber):
+    restore_session_if_needed(data.phone)
     client = TelegramClient(f"{SESSION_DIR}/{data.phone}", API_ID, API_HASH)
     await client.connect()
     dialogs = await client.get_dialogs()
