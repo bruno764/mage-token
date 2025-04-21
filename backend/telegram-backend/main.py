@@ -106,34 +106,42 @@ async def perform_broadcast(
     await client.connect()
 
     for r in [r.strip() for r in recipients.split(",") if r]:
-        try:
-            # 🟢 Grupos/canais normalmente começam com "-" e são IDs numéricos
-            if r.lstrip("-").isdigit():
-                entity = await client.get_input_entity(int(r))
-            
-            # 📱 Número de telefone — importa como contato
-            elif r.startswith("+") or r.replace("+", "").isdigit():
-                formatted = r if r.startswith("+") else f"+{r}"
-                contact = InputPhoneContact(client_id=0, phone=formatted, first_name="Contato", last_name="")
-                await client(ImportContactsRequest([contact]))
-                entity = await client.get_input_entity(formatted)
+    try:
+        # 🟢 Grupos/canais: começam com "-" e são IDs inteiros
+        if r.lstrip("-").isdigit():
+            entity = await client.get_input_entity(int(r))
 
-            # 🌐 Username direto (@exemplo)
-            else:
-                entity = await client.get_input_entity(r)
+        # 🔵 Telefones (com ou sem +)
+        elif r.replace("+", "").isdigit():
+            # Garante que começa com "+" (ex: 5599999999999 → +5599999999999)
+            formatted = r if r.startswith("+") else f"+{r}"
 
-            # 📤 Envia mensagem ou arquivo
-            if local_file:
-                await client.send_file(entity, local_file, caption=message)
-            else:
-                await client.send_message(entity, message)
+            # Adiciona o contato sem alterar o nome salvo no Telegram
+            contact = InputPhoneContact(
+                client_id=0,
+                phone=formatted,
+                first_name=" ",  # espaço em branco evita sobrescrever nome
+                last_name=""
+            )
+            await client(ImportContactsRequest([contact]))
+            entity = await client.get_input_entity(formatted)
 
-        except Exception as err:
-            print(f"❌ Erro ao enviar para {r}: {err}")
-            if job_id:
-                firestore_db.collection("scheduled_broadcasts").document(job_id).update({
-                    f"errors.{r}": str(err)
-                })
+        # 🟣 Username direto (@exemplo)
+        else:
+            entity = await client.get_input_entity(r)
+
+        # Envio da mensagem ou arquivo
+        if local_file:
+            await client.send_file(entity, local_file, caption=message)
+        else:
+            await client.send_message(entity, message)
+
+    except Exception as err:
+        print(f"❌ Erro ao enviar para {r}: {err}")
+        if job_id:
+            firestore_db.collection("scheduled_broadcasts").document(job_id).update({
+                f"errors.{r}": str(err)
+            })
 
 
     await client.disconnect()
