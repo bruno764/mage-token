@@ -107,15 +107,18 @@ async def perform_broadcast(
 
     for r in [r.strip() for r in recipients.split(",") if r]:
         try:
-            # Se o número for um telefone, adicione como contato
-            if r.isdigit() or r.startswith("+"):
+            # Verifica tipo de destinatário
+            if r.startswith("-100"):  # grupo ou canal
+                entity = await client.get_entity(int(r))
+            elif r.startswith("+") or r.lstrip("+").isdigit():  # número de telefone
                 formatted = r if r.startswith("+") else f"+{r}"
                 contact = InputPhoneContact(client_id=0, phone=formatted, first_name="Contato", last_name="")
                 await client(ImportContactsRequest([contact]))
                 entity = await client.get_entity(formatted)
-            else:
+            else:  # username ou outro ID
                 entity = await client.get_entity(r)
 
+            # Envia mensagem ou arquivo
             if local_file:
                 await client.send_file(entity, local_file, caption=message)
             else:
@@ -123,7 +126,6 @@ async def perform_broadcast(
 
         except Exception as err:
             print(f"❌ Erro ao enviar para {r}: {err}")
-
             if job_id:
                 firestore_db.collection("scheduled_broadcasts").document(job_id).update({
                     f"errors.{r}": str(err)
@@ -139,6 +141,7 @@ async def perform_broadcast(
 
     if local_file and os.path.exists(local_file):
         os.remove(local_file)
+
 
 # ─── LIFESPAN PARA REAGENDAR JOBS PENDENTES ──────────────────────────────────
 @asynccontextmanager
