@@ -42,10 +42,10 @@ TEMP_DIR = "temp"
 os.makedirs(TEMP_DIR, exist_ok=True)
 
 # ─── CONFIGURAÇÃO DO SUPABASE ─────────────────────────────────────────────────
-SUPABASE_URL   = os.getenv("SUPABASE_URL")
-SUPABASE_KEY   = os.getenv("SUPABASE_KEY")
-BUCKET         = os.getenv("SUPABASE_BUCKET")
-supabase       = create_client(SUPABASE_URL, SUPABASE_KEY)
+SUPABASE_URL = os.getenv("SUPABASE_URL")
+SUPABASE_KEY = os.getenv("SUPABASE_KEY")
+BUCKET       = os.getenv("SUPABASE_BUCKET")
+supabase     = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 # ─── AGENDADOR ───────────────────────────────────────────────────────────────
 scheduler = AsyncIOScheduler()
