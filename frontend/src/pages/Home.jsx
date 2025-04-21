@@ -329,29 +329,29 @@ export default function Home() {
     <span className="text-gray-400 font-bold">⚪️ Desconhecida</span>
   )}
 </div>
+<button
+    onClick={handleListContacts}
+    className="bg-cyan-600 px-4 py-2 rounded text-white font-bold"
+  >
+    📇 Listar Contatos & Grupos
+  </button>
 
-          <button
-            onClick={handleListContacts}
-            className="bg-cyan-600 px-4 py-2 rounded text-white font-bold"
-          >
-            📇 Listar Contatos & Grupos
-          </button>
-        </div>
+  <button
+    onClick={() => {
+      const phone = telegramTokenRef.current?.value;
+      if (phone) {
+        fetch(`${API_URL}/broadcast-history?phone=${phone}`)
+          .then((res) => res.json())
+          .then((json) => setBroadcastHistory(json.items || []))
+          .catch(() => alert("Erro ao atualizar histórico"));
+      }
+    }}
+    className="bg-gray-600 px-4 py-2 rounded text-white font-bold"
+  >
+    🔄 Atualizar Histórico
+  </button>
+</div> {/* fecha o flex gap-2 flex-wrap */}
 
-        <button
-  onClick={() => {
-    const phone = telegramTokenRef.current?.value;
-    if (phone) {
-      fetch(`${API_URL}/broadcast-history?phone=${phone}`)
-        .then((res) => res.json())
-        .then((json) => setBroadcastHistory(json.items || []))
-        .catch(() => alert("Erro ao atualizar histórico"));
-    }
-  }}
-  className="bg-gray-600 px-4 py-2 rounded text-white font-bold mt-2"
->
-  🔄 Atualizar Histórico
-</button>
 
         {/* Marcar contatos / grupos */}
         <div className="flex gap-2 flex-wrap">
