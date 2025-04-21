@@ -1,10 +1,10 @@
 # main.py
 
 import os
-import json
 import shutil
 from uuid import uuid4
 from datetime import datetime
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -13,6 +13,7 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.date import DateTrigger
 
 from telethon.sync import TelegramClient
+from telethon.errors.rpcerrorlist import FloodWaitError
 from telethon.tl.functions.contacts import GetContactsRequest
 from telethon.tl.types import User, Chat, Channel
 
@@ -26,17 +27,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # ─── INICIALIZAÇÃO DO FIREBASE ────────────────────────────────────────────────
-_firebase_cred = os.getenv("FIREBASE_CRED")
-if not _firebase_cred:
-    raise RuntimeError("Você precisa definir a variável FIREBASE_CRED")
-try:
-    # se a variável for um JSON bruto
-    cred_payload = json.loads(_firebase_cred)
-    cred = credentials.Certificate(cred_payload)
-except json.JSONDecodeError:
-    # senão, assume que é caminho para arquivo
-    cred = credentials.Certificate(_firebase_cred)
-
+cred = credentials.Certificate(os.getenv("FIREBASE_CRED"))
 if not firebase_admin._apps:
     firebase_admin.initialize_app(cred)
 firestore_db = firestore.client()
@@ -52,10 +43,10 @@ TEMP_DIR = "temp"
 os.makedirs(TEMP_DIR, exist_ok=True)
 
 # ─── CONFIGURAÇÃO DO SUPABASE ─────────────────────────────────────────────────
-SUPABASE_URL = os.getenv("SUPABASE_URL")
-SUPABASE_KEY = os.getenv("SUPABASE_KEY")
-BUCKET       = os.getenv("SUPABASE_BUCKET")
-supabase     = create_client(SUPABASE_URL, SUPABASE_KEY)
+SUPABASE_URL   = os.getenv("SUPABASE_URL")
+SUPABASE_KEY   = os.getenv("SUPABASE_KEY")
+BUCKET         = os.getenv("SUPABASE_BUCKET")
+supabase       = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 # ─── AGENDADOR ───────────────────────────────────────────────────────────────
 scheduler = AsyncIOScheduler()
@@ -112,20 +103,18 @@ async def perform_broadcast(
     if local_file and os.path.exists(local_file):
         os.remove(local_file)
 
-# ─── RE-AGENDAMENTO NA INICIALIZAÇÃO ─────────────────────────────────────────
-app = FastAPI()
-
-@app.on_event("startup")
-async def load_scheduled_jobs():
+# ─── LIFESPAN PARA REAGENDAR JOBS PENDENTES ──────────────────────────────────
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    now = datetime.utcnow()
     try:
-        now = datetime.utcnow()
-        snapshots = (
+        docs = (
             firestore_db.collection("scheduled_broadcasts")
-            .where(filter=("status", "==", "pending"))
-            .where(filter=("send_at", ">", now))
-            .get()
+            .where("status", "==", "pending")
+            .where("send_at", ">", now)
+            .stream()
         )
-        for doc in snapshots:
+        for doc in docs:
             rec = doc.to_dict()
             job_id = doc.id
             trigger = DateTrigger(run_date=rec["send_at"])
@@ -145,12 +134,15 @@ async def load_scheduled_jobs():
         print("✅ Agendamentos carregados no startup")
     except Exception as e:
         print(f"⚠️ Não foi possível carregar agendamentos: {e}")
+    yield
+    # aqui poderia vir código de shutdown, se necessário
 
-# ─── CORS ─────────────────────────────────────────────────────────────────────
+# ─── FASTAPI & CORS ──────────────────────────────────────────────────────────
 origins = [
     "https://mage-token.vercel.app",
     "http://localhost:3000",
 ]
+app = FastAPI(lifespan=lifespan)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
@@ -168,7 +160,15 @@ def root():
 async def start_login(data: PhoneNumber):
     client = TelegramClient(f"{SESSION_DIR}/{data.phone}", API_ID, API_HASH)
     await client.connect()
-    result = await client.send_code_request(data.phone)
+    try:
+        result = await client.send_code_request(data.phone)
+    except FloodWaitError as e:
+        # e.seconds é o tempo em segundos que o usuário deve aguardar
+        await client.disconnect()
+        raise HTTPException(
+            status_code=429,
+            detail=f"Aguarde {e.seconds} segundos antes de tentar novamente."
+        )
     await client.disconnect()
     return {
         "status": "Código enviado com sucesso",
