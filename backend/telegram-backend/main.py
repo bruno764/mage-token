@@ -1,10 +1,10 @@
 # main.py
 
 import os
+import json
 import shutil
 from uuid import uuid4
 from datetime import datetime
-from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -20,15 +20,22 @@ from supabase import create_client
 import firebase_admin
 from firebase_admin import credentials, firestore
 
-from google.cloud.firestore_v1 import FieldFilter
-
 from dotenv import load_dotenv
 
 # ─── CARREGA VARIÁVEIS DE AMBIENTE ────────────────────────────────────────────
 load_dotenv()
 
 # ─── INICIALIZAÇÃO DO FIREBASE ────────────────────────────────────────────────
-cred = credentials.Certificate(os.getenv("FIREBASE_CRED"))
+_firebase_cred = os.getenv("FIREBASE_CRED")
+if not _firebase_cred:
+    raise RuntimeError("Você precisa definir a variável FIREBASE_CRED")
+# se vier um JSON cru, parse; caso contrário, trata como caminho
+try:
+    cred_payload = json.loads(_firebase_cred)
+    cred = credentials.Certificate(cred_payload)
+except json.JSONDecodeError:
+    cred = credentials.Certificate(_firebase_cred)
+
 if not firebase_admin._apps:
     firebase_admin.initialize_app(cred)
 firestore_db = firestore.client()
@@ -70,6 +77,7 @@ async def perform_broadcast(
     file_key: str = None,
     job_id: str = None
 ):
+    # baixa arquivo do Supabase, se houver
     local_file = None
     if file_key:
         data = supabase.storage.from_(BUCKET).download(file_key)
@@ -93,6 +101,7 @@ async def perform_broadcast(
 
     await client.disconnect()
 
+    # marca como enviado no Firestore se veio de agendamento
     if job_id:
         firestore_db.collection("scheduled_broadcasts") \
             .document(job_id) \
@@ -104,43 +113,44 @@ async def perform_broadcast(
     if local_file and os.path.exists(local_file):
         os.remove(local_file)
 
-# ─── LIFESPAN PARA REAGENDAR JOBS PENDENTES ──────────────────────────────────
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    now = datetime.utcnow()
-    docs = (
-        firestore_db.collection("scheduled_broadcasts")
-        .where(filter=FieldFilter("status", "==", "pending"))
-        .where(filter=FieldFilter("send_at", ">", now))
-        .stream()
-    )
-    for doc in docs:
-        rec = doc.to_dict()
-        job_id = doc.id
-        trigger = DateTrigger(run_date=rec["send_at"])
-        scheduler.add_job(
-            perform_broadcast,
-            trigger=trigger,
-            args=[
-                rec["phone"],
-                rec["message"],
-                rec["recipients"],
-                rec.get("file_key"),
-                job_id
-            ],
-            id=job_id,
-            replace_existing=True
+# ─── RE-AGENDAMENTO NA INICIALIZAÇÃO ─────────────────────────────────────────
+app = FastAPI()
+@app.on_event("startup")
+async def load_scheduled_jobs():
+    try:
+        now = datetime.utcnow()
+        snapshots = (
+            firestore_db.collection("scheduled_broadcasts")
+            .where("status", "==", "pending")
+            .where("send_at", ">", now)
+            .get()
         )
-    yield
-    # shutdown, se necessário
+        for doc in snapshots:
+            rec = doc.to_dict()
+            job_id = doc.id
+            trigger = DateTrigger(run_date=rec["send_at"])
+            scheduler.add_job(
+                perform_broadcast,
+                trigger=trigger,
+                args=[
+                    rec["phone"],
+                    rec["message"],
+                    rec["recipients"],
+                    rec.get("file_key"),
+                    job_id
+                ],
+                id=job_id,
+                replace_existing=True
+            )
+        print("✅ Agendamentos carregados no startup")
+    except Exception as e:
+        print(f"⚠️ Não foi possível carregar agendamentos: {e}")
 
-# ─── FASTAPI & CORS ──────────────────────────────────────────────────────────
+# ─── CORS ─────────────────────────────────────────────────────────────────────
 origins = [
     "https://mage-token.vercel.app",
     "http://localhost:3000",
 ]
-
-app = FastAPI(lifespan=lifespan)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
