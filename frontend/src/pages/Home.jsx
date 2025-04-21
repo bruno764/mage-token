@@ -251,60 +251,13 @@ export default function Home() {
         discord: "🎮 Bot para Discord",
         x: "🐦 Auto Reply / Auto DM no X",
         estatisticas: "📊 Estatísticas e Relatórios",
-        historico: "🕓 Histórico de Campanhas",
+        historico: "🕓 Histórico Geral de Campanhas",
       };
       return <div>{placeholders[activeTab] || "Selecione uma plataforma."}</div>;
     }
-    if (activeTab === "historico") {
-      return (
-        <div>
-          <h3 className="text-2xl font-bold mb-2">📜 Histórico de Envios</h3>
-{telegramTokenRef.current?.value && (
-  <p className="text-gray-400 mb-4">
-    Mostrando envios para: {telegramTokenRef.current.value}
-  </p>
-)}
-          {broadcastHistory.length === 0 ? (
-            <p className="text-gray-400">Nenhum envio registrado ainda.</p>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-sm text-white border border-gray-600">
-                <thead className="bg-gray-800 text-gray-300">
-                  <tr>
-                    <th className="px-4 py-2">📱 Número</th>
-                    <th className="px-4 py-2">📝 Mensagem</th>
-                    <th className="px-4 py-2">🎯 Destinatários</th>
-                    <th className="px-4 py-2">⏰ Envio</th>
-                    <th className="px-4 py-2">📎 Anexo</th>
-                    <th className="px-4 py-2">📊 Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {broadcastHistory.map((item, i) => (
-                    <tr key={i} className="border-t border-gray-700">
-                      <td className="px-4 py-2">{item.phone}</td>
-                      <td className="px-4 py-2">{item.message?.slice(0, 30)}...</td>
-                      <td className="px-4 py-2">{item.recipients?.split(",").length}</td>
-                      <td className="px-4 py-2">
-                        {new Date(item.send_at).toLocaleString()}
-                      </td>
-                      <td className="px-4 py-2">
-                        {item.file_key ? "✅" : "—"}
-                      </td>
-                      <td className="px-4 py-2 capitalize">
-                        {item.status === "sent" ? "✅ Enviado" : "🕒 Pendente"}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-      );
-    }
+  
+    // Conteúdo da aba Telegram (Disparo + Histórico)
     
-      
     return (
       <div className="space-y-6">
         <h3 className="text-2xl font-bold">🔮 Disparo via Telegram (Conta Real)</h3>
