@@ -20,6 +20,8 @@ from supabase import create_client
 import firebase_admin
 from firebase_admin import credentials, firestore
 
+from google.cloud.firestore_v1 import FieldFilter
+
 from dotenv import load_dotenv
 
 # ─── CARREGA VARIÁVEIS DE AMBIENTE ────────────────────────────────────────────
@@ -108,8 +110,8 @@ async def lifespan(app: FastAPI):
     now = datetime.utcnow()
     docs = (
         firestore_db.collection("scheduled_broadcasts")
-        .where(filter=("status", "==", "pending"))
-        .where(filter=("send_at", ">", now))
+        .where(filter=FieldFilter("status", "==", "pending"))
+        .where(filter=FieldFilter("send_at", ">", now))
         .stream()
     )
     for doc in docs:
@@ -130,10 +132,9 @@ async def lifespan(app: FastAPI):
             replace_existing=True
         )
     yield
-    # aqui poderia vir código de shutdown, se necessário
+    # shutdown, se necessário
 
 # ─── FASTAPI & CORS ──────────────────────────────────────────────────────────
-# defina aqui as origens que seu front usa:
 origins = [
     "https://mage-token.vercel.app",
     "http://localhost:3000",
