@@ -78,50 +78,35 @@ export default function Home() {
     alert(result.authorized ? "✅ Sessão ATIVA" : "❌ Sessão INATIVA");
   };
 
-  // === Substitui apenas esta função ===
   const handleListContacts = async () => {
     const phone = telegramTokenRef.current.value;
-
-    // 1) busca usuários
     const usersRes = await fetch(`${API_URL}/list-contacts`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ phone }),
     });
-    // 2) busca grupos/conversas
     const groupsRes = await fetch(`${API_URL}/list-dialogs`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ phone }),
     });
-
     const usersJson = await usersRes.json();
     const groupsJson = await groupsRes.json();
 
-    const fetchedUsers = usersJson.contacts || [];
-    const fetchedChats = groupsJson.dialogs || [];
-
-    // filtra somente usuários (username ou phone)
-    const onlyContacts = fetchedUsers.filter((c) => c.username || c.phone);
-
-    // filtra somente grupos/canais
-    const onlyGroups = fetchedChats.filter(
-      (d) =>
-        d.chat?.type === "group" ||
-        d.chat?.type === "supergroup" ||
-        d.chat?.type === "channel"
+    const onlyContacts = (usersJson.contacts || []).filter(
+      (c) => c.username || c.phone
+    );
+    const onlyGroups = (groupsJson.dialogs || []).filter((d) =>
+      ["group", "supergroup", "channel"].includes(d.chat?.type)
     );
 
-    setContacts({
-      users: onlyContacts,
-      groups: onlyGroups,
-    });
+    setContacts({ users: onlyContacts, groups: onlyGroups });
     setSelectedContacts([]);
     alert("📋 Lista de usuários e grupos carregada.");
   };
-  // =======================================
 
-  const handleBroadcast = async () => {
+  // Envio imediato
+  const handleSendNow = async () => {
     const phone = telegramTokenRef.current.value;
     const message = messageRef.current.value;
     const file = fileRef.current.files[0];
@@ -131,19 +116,12 @@ export default function Home() {
         .map((n) => n.trim())
         .filter(Boolean) || [];
 
-    if (!message || !phone)
+    if (!message || !phone) {
       return alert("⚠️ Número, mensagem e contatos obrigatórios.");
-
+    }
     const allRecipients = [...selectedContacts, ...manualNumbers].filter(Boolean);
-    if (allRecipients.length === 0)
+    if (allRecipients.length === 0) {
       return alert("⚠️ Nenhum destinatário válido encontrado.");
-
-    // Se agendado, apenas notifica (a lógica de agendamento real ficaria no backend ou automação)
-    if (scheduledAt) {
-      alert(
-        `⏰ Envio agendado para ${new Date(scheduledAt).toLocaleString()}`
-      );
-      return;
     }
 
     const formData = new FormData();
@@ -160,303 +138,299 @@ export default function Home() {
     alert(result.status || result.error);
   };
 
-  const renderTabContent = () => {
-    switch (activeTab) {
-      case "telegram":
-        return (
-          <div className="space-y-6">
-            <h3 className="text-2xl font-bold">
-              🔮 Disparo via Telegram (Conta Real)
-            </h3>
+  // Agendamento
+  const handleSchedule = async () => {
+    const phone = telegramTokenRef.current.value;
+    const message = messageRef.current.value;
+    const file = fileRef.current.files[0];
+    const manualNumbers =
+      manualNumbersRef.current?.value
+        .split("\n")
+        .map((n) => n.trim())
+        .filter(Boolean) || [];
 
-            <input
-              placeholder="Seu número de telefone (+55...)"
-              ref={telegramTokenRef}
-              className="w-full p-3 rounded bg-gray-800 text-white placeholder-gray-400"
-            />
+    if (!message || !phone || !scheduledAt) {
+      return alert(
+        "⚠️ Número, mensagem, contatos e data de agendamento obrigatórios."
+      );
+    }
+    const allRecipients = [...selectedContacts, ...manualNumbers].filter(
+      Boolean
+    );
+    if (allRecipients.length === 0) {
+      return alert("⚠️ Nenhum destinatário válido encontrado.");
+    }
 
-            <button
-              onClick={async () => {
-                const phone = telegramTokenRef.current.value;
-                if (!phone) return alert("Digite o número de telefone.");
-                const res = await fetch(`${API_URL}/start-login`, {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({ phone }),
-                });
-                const result = await res.json();
-                if (result.phone_code_hash) setCodeHash(result.phone_code_hash);
-                alert(result.status || result.error);
-              }}
-              className="bg-yellow-500 px-4 py-2 rounded text-white font-bold"
-            >
-              📩 Enviar Código
-            </button>
+    const formData = new FormData();
+    formData.append("phone", phone);
+    formData.append("message", message);
+    formData.append("recipients", allRecipients.join(","));
+    formData.append("send_at", scheduledAt);
+    if (file) formData.append("file", file);
 
-            <input
-              type="text"
-              placeholder="Código recebido no Telegram"
-              id="codeInput"
-              className="w-full p-3 rounded bg-gray-800 text-white placeholder-gray-400"
-            />
-
-            <button
-              onClick={async () => {
-                const phone = telegramTokenRef.current.value;
-                const code = document.getElementById("codeInput").value;
-                if (!code || !codeHash)
-                  return alert("Código ou hash ausente.");
-                const res = await fetch(`${API_URL}/verify-code`, {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({ phone, code, phone_code_hash: codeHash }),
-                });
-                const result = await res.json();
-                if (result.status) {
-                  alert(result.status);
-                  setSessionAuthorized(true);
-                } else {
-                  alert(result.error);
-                }
-              }}
-              className="bg-green-600 px-4 py-2 rounded text-white font-bold"
-            >
-              ✅ Confirmar Código
-            </button>
-
-            {sessionAuthorized && (
-              <div className="text-green-400 font-semibold">🟢 Conectado</div>
-            )}
-
-            <div className="flex gap-2 flex-wrap">
-              <button
-                onClick={handleCheckSession}
-                className="bg-purple-500 px-4 py-2 rounded text-white font-bold"
-              >
-                🔍 Verificar Sessão
-              </button>
-              <button
-                onClick={handleListContacts}
-                className="bg-cyan-600 px-4 py-2 rounded text-white font-bold"
-              >
-                📇 Listar Contatos & Grupos
-              </button>
-            </div>
-
-            {/* ADICIONADOS: botões separados */}
-            <div className="flex gap-2 flex-wrap">
-              {contacts.users.length > 0 && (
-                <button
-                  onClick={() => {
-                    const allC = contacts.users.map((c) => c.username || c.phone);
-                    setSelectedContacts((prev) =>
-                      allC.every((id) => prev.includes(id))
-                        ? prev.filter((id) => !allC.includes(id))
-                        : [...new Set([...prev, ...allC])]
-                    );
-                  }}
-                  className="bg-indigo-600 px-4 py-2 rounded text-white font-bold"
-                >
-                  {contacts.users.every((c) =>
-                    selectedContacts.includes(c.username || c.phone)
-                  )
-                    ? "❌ Desmarcar Contatos"
-                    : "✔️ Marcar Contatos"}
-                </button>
-              )}
-              {contacts.groups.length > 0 && (
-                <button
-                  onClick={() => {
-                    const allG = contacts.groups.map((g) => g.chat.id);
-                    setSelectedContacts((prev) =>
-                      allG.every((id) => prev.includes(id))
-                        ? prev.filter((id) => !allG.includes(id))
-                        : [...new Set([...prev, ...allG])]
-                    );
-                  }}
-                  className="bg-yellow-600 px-4 py-2 rounded text-white font-bold"
-                >
-                  {contacts.groups.every((g) =>
-                    selectedContacts.includes(g.chat.id)
-                  )
-                    ? "❌ Desmarcar Grupos"
-                    : "✔️ Marcar Grupos"}
-                </button>
-              )}
-            </div>
-
-            {/* NOVO: escolha de data/hora para agendamento */}
-            <div className="flex items-center gap-2">
-              <input
-                type="datetime-local"
-                value={scheduledAt}
-                onChange={(e) => setScheduledAt(e.target.value)}
-                className="p-2 rounded bg-gray-800 text-white"
-              />
-              <span className="text-gray-400">⏰ Agendar Envio</span>
-            </div>
-
-            <div className="flex gap-2 flex-wrap">
-              {(contacts.users.length + contacts.groups.length) > 0 && (
-                <button
-                  onClick={() => {
-                    const allIds = [
-                      ...contacts.users.map((c) => c.username || c.phone),
-                      ...contacts.groups.map((g) => g.chat.id),
-                    ];
-                    setSelectedContacts((prev) =>
-                      prev.length === allIds.length ? [] : allIds
-                    );
-                  }}
-                  className="bg-blue-600 px-4 py-2 rounded text-white font-bold"
-                >
-                  {selectedContacts.length ===
-                  contacts.users.length + contacts.groups.length
-                    ? "❌ Desselecionar Todos"
-                    : "✔️ Selecionar Todos"}
-                </button>
-              )}
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              {/* Usuários */}
-              <div className="h-48 overflow-y-auto border border-gray-700 rounded p-2 bg-gray-900">
-                <h4 className="text-white font-bold mb-2">👤 Contatos</h4>
-                {contacts.users.map((c, i) => {
-                  const id = c.username || c.phone;
-                  return (
-                    <label
-                      key={i}
-                      className="flex items-center gap-2 text-white text-sm mb-1"
-                    >
-                      <input
-                        type="checkbox"
-                        checked={selectedContacts.includes(id)}
-                        onChange={(e) =>
-                          e.target.checked
-                            ? setSelectedContacts((prev) => [...prev, id])
-                            : setSelectedContacts((prev) =>
-                                prev.filter((v) => v !== id)
-                              )
-                        }
-                      />
-                      <span>
-                        {c.first_name} {c.last_name || ""} ({id})
-                      </span>
-                    </label>
-                  );
-                })}
-              </div>
-
-              {/* Grupos */}
-              <div className="h-48 overflow-y-auto border border-yellow-700 rounded p-2 bg-gray-900">
-                <h4 className="text-yellow-400 font-bold mb-2">👥 Grupos</h4>
-                {contacts.groups.map((g, i) => {
-                  const gid = g.chat.id;
-                  const title = g.chat.title;
-                  return (
-                    <label
-                      key={i}
-                      className="flex items-center gap-2 text-yellow-300 text-sm mb-1"
-                    >
-                      <input
-                        type="checkbox"
-                        checked={selectedContacts.includes(gid)}
-                        onChange={(e) =>
-                          e.target.checked
-                            ? setSelectedContacts((prev) => [...prev, gid])
-                            : setSelectedContacts((prev) =>
-                                prev.filter((v) => v !== gid)
-                              )
-                        }
-                      />
-                      <span>{title}</span>
-                    </label>
-                  );
-                })}
-              </div>
-            </div>
-
-            <div>
-              <h4 className="font-semibold mb-1">📄 Números externos (um por linha)</h4>
-              <textarea
-                ref={manualNumbersRef}
-                rows={3}
-                placeholder="+55..."
-                className="w-full p-2 bg-gray-800 rounded text-white"
-              />
-            </div>
-
-            <textarea
-              ref={messageRef}
-              rows={4}
-              placeholder="Escreva sua mensagem..."
-              className="w-full p-3 bg-gray-800 rounded text-white"
-            />
-
-            <input
-              ref={fileRef}
-              type="file"
-              className="w-full p-2 bg-gray-800 rounded"
-            />
-
-            <button
-              onClick={handleBroadcast}
-              className="bg-blue-600 px-6 py-2 rounded text-white font-bold"
-            >
-              📢 {scheduledAt ? "Agendar" : "Enviar"}
-            </button>
-          </div>
-        );
-      case "whatsapp":
-        return <div>📱 Integração com WhatsApp</div>;
-      case "facebook":
-        return <div>📘 Facebook Sender</div>;
-      case "discord":
-        return <div>🎮 Bot para Discord</div>;
-      case "x":
-        return <div>🐦 Auto Reply / Auto DM no X</div>;
-      case "estatisticas":
-        return <div>📊 Estatísticas e Relatórios</div>;
-      case "historico":
-        return <div>🕓 Histórico de Campanhas</div>;
-      case "upgrade":
-        return (
-          <div>
-            <h3 className="text-2xl font-bold mb-4">💳 Upgrade de Plano</h3>
-            {userData?.isPremium ? (
-              <div className="text-green-400">
-                Você já é Premium!<br />
-                Válido até:{" "}
-                <span className="text-white font-semibold">
-                  {new Date(userData.validUntil).toLocaleDateString()}
-                </span>
-              </div>
-            ) : (
-              <>
-                <p className="text-gray-300 mb-4">
-                  Faça upgrade e tenha acesso a todas as plataformas sem limites.
-                </p>
-                <button
-                  onClick={handleUpgrade}
-                  className="bg-orange-500 hover:bg-orange-600 px-6 py-3 rounded font-bold"
-                >
-                  Ativar Premium (R$ 49/mês)
-                </button>
-              </>
-            )}
-          </div>
-        );
-      default:
-        return <div>Selecione uma plataforma.</div>;
+    const res = await fetch(`${API_URL}/schedule-broadcast`, {
+      method: "POST",
+      body: formData,
+    });
+    const result = await res.json();
+    if (result.job_id) {
+      alert(
+        `⏰ Envio agendado para ${new Date(
+          scheduledAt
+        ).toLocaleString()}`
+      );
+      setScheduledAt("");
+    } else {
+      alert(result.detail || result.error);
     }
   };
 
-  if (loading)
-    return <div className="text-white text-center py-20">Carregando...</div>;
+  const renderTabContent = () => {
+    if (activeTab !== "telegram") {
+      const placeholders = {
+        whatsapp: "📱 Integração com WhatsApp",
+        facebook: "📘 Facebook Sender",
+        discord: "🎮 Bot para Discord",
+        x: "🐦 Auto Reply / Auto DM no X",
+        estatisticas: "📊 Estatísticas e Relatórios",
+        historico: "🕓 Histórico de Campanhas",
+      };
+      return <div>{placeholders[activeTab] || "Selecione uma plataforma."}</div>;
+    }
+
+    return (
+      <div className="space-y-6">
+        <h3 className="text-2xl font-bold">🔮 Disparo via Telegram (Conta Real)</h3>
+
+        <input
+          placeholder="Seu número de telefone (+55...)"
+          ref={telegramTokenRef}
+          className="w-full p-3 rounded bg-gray-800 text-white placeholder-gray-400"
+        />
+
+        <button
+          onClick={async () => {
+            const phone = telegramTokenRef.current.value;
+            if (!phone) return alert("Digite o número de telefone.");
+            const res = await fetch(`${API_URL}/start-login`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ phone }),
+            });
+            const result = await res.json();
+            if (result.phone_code_hash) setCodeHash(result.phone_code_hash);
+            alert(result.status || result.error);
+          }}
+          className="bg-yellow-500 px-4 py-2 rounded text-white font-bold"
+        >
+          📩 Enviar Código
+        </button>
+
+        <input
+          type="text"
+          placeholder="Código recebido no Telegram"
+          id="codeInput"
+          className="w-full p-3 rounded bg-gray-800 text-white placeholder-gray-400"
+        />
+
+        <button
+          onClick={async () => {
+            const phone = telegramTokenRef.current.value;
+            const code = document.getElementById("codeInput").value;
+            if (!code || !codeHash) return alert("Código ou hash ausente.");
+            const res = await fetch(`${API_URL}/verify-code`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ phone, code, phone_code_hash: codeHash }),
+            });
+            const result = await res.json();
+            if (result.status) {
+              alert(result.status);
+              setSessionAuthorized(true);
+            } else {
+              alert(result.error);
+            }
+          }}
+          className="bg-green-600 px-4 py-2 rounded text-white font-bold"
+        >
+          ✅ Confirmar Código
+        </button>
+
+        {sessionAuthorized && (
+          <div className="text-green-400 font-semibold">🟢 Conectado</div>
+        )}
+
+        <div className="flex gap-2 flex-wrap">
+          <button
+            onClick={handleCheckSession}
+            className="bg-purple-500 px-4 py-2 rounded text-white font-bold"
+          >
+            🔍 Verificar Sessão
+          </button>
+          <button
+            onClick={handleListContacts}
+            className="bg-cyan-600 px-4 py-2 rounded text-white font-bold"
+          >
+            📇 Listar Contatos & Grupos
+          </button>
+        </div>
+
+        {/* Marcar contatos / grupos */}
+        <div className="flex gap-2 flex-wrap">
+          {contacts.users.length > 0 && (
+            <button
+              onClick={() => {
+                const allC = contacts.users.map((c) => c.username || c.phone);
+                setSelectedContacts((prev) =>
+                  allC.every((id) => prev.includes(id))
+                    ? prev.filter((id) => !allC.includes(id))
+                    : [...new Set([...prev, ...allC])]
+                );
+              }}
+              className="bg-indigo-600 px-4 py-2 rounded text-white font-bold"
+            >
+              {contacts.users.every((c) =>
+                selectedContacts.includes(c.username || c.phone)
+              )
+                ? "❌ Desmarcar Contatos"
+                : "✔️ Marcar Contatos"}
+            </button>
+          )}
+          {contacts.groups.length > 0 && (
+            <button
+              onClick={() => {
+                const allG = contacts.groups.map((g) => g.chat.id);
+                setSelectedContacts((prev) =>
+                  allG.every((id) => prev.includes(id))
+                    ? prev.filter((id) => !allG.includes(id))
+                    : [...new Set([...prev, ...allG])]
+                );
+              }}
+              className="bg-yellow-600 px-4 py-2 rounded text-white font-bold"
+            >
+              {contacts.groups.every((g) =>
+                selectedContacts.includes(g.chat.id)
+              )
+                ? "❌ Desmarcar Grupos"
+                : "✔️ Marcar Grupos"}
+            </button>
+          )}
+        </div>
+
+        {/* Data/hora agendamento */}
+        <div className="flex items-center gap-2">
+          <input
+            type="datetime-local"
+            value={scheduledAt}
+            onChange={(e) => setScheduledAt(e.target.value)}
+            className="p-2 rounded bg-gray-800 text-white"
+          />
+          <span className="text-gray-400">⏰ Agendar Envio</span>
+        </div>
+
+        {/* Lista de contatos e grupos */}
+        <div className="grid grid-cols-2 gap-4">
+          <div className="h-48 overflow-y-auto border border-gray-700 rounded p-2 bg-gray-900">
+            <h4 className="text-white font-bold mb-2">👤 Contatos</h4>
+            {contacts.users.map((c, i) => {
+              const id = c.username || c.phone;
+              return (
+                <label
+                  key={i}
+                  className="flex items-center gap-2 text-white text-sm mb-1"
+                >
+                  <input
+                    type="checkbox"
+                    checked={selectedContacts.includes(id)}
+                    onChange={(e) =>
+                      e.target.checked
+                        ? setSelectedContacts((prev) => [...prev, id])
+                        : setSelectedContacts((prev) =>
+                            prev.filter((v) => v !== id)
+                          )
+                    }
+                  />
+                  <span>
+                    {c.first_name} {c.last_name || ""} ({id})
+                  </span>
+                </label>
+              );
+            })}
+          </div>
+          <div className="h-48 overflow-y-auto border border-yellow-700 rounded p-2 bg-gray-900">
+            <h4 className="text-yellow-400 font-bold mb-2">👥 Grupos</h4>
+            {contacts.groups.map((g, i) => (
+              <label
+                key={i}
+                className="flex items-center gap-2 text-yellow-300 text-sm mb-1"
+              >
+                <input
+                  type="checkbox"
+                  checked={selectedContacts.includes(g.chat.id)}
+                  onChange={(e) =>
+                    e.target.checked
+                      ? setSelectedContacts((prev) => [...prev, g.chat.id])
+                      : setSelectedContacts((prev) =>
+                          prev.filter((v) => v !== g.chat.id)
+                        )
+                  }
+                />
+                <span>{g.chat.title}</span>
+              </label>
+            ))}
+          </div>
+        </div>
+
+        {/* Números externos */}
+        <div>
+          <h4 className="font-semibold mb-1">
+            📄 Números externos (um por linha)
+          </h4>
+          <textarea
+            ref={manualNumbersRef}
+            rows={3}
+            placeholder="+55..."
+            className="w-full p-2 bg-gray-800 rounded text-white"
+          />
+        </div>
+
+        {/* Mensagem e arquivo */}
+        <textarea
+          ref={messageRef}
+          rows={4}
+          placeholder="Escreva sua mensagem..."
+          className="w-full p-3 bg-gray-800 rounded text-white"
+        />
+        <input
+          ref={fileRef}
+          type="file"
+          className="w-full p-2 bg-gray-800 rounded"
+        />
+
+        {/* Botões de ação */}
+        <div className="flex gap-4">
+          <button
+            onClick={handleSendNow}
+            className="bg-blue-600 px-6 py-2 rounded text-white font-bold"
+          >
+            📢 Enviar Agora
+          </button>
+          <button
+            onClick={handleSchedule}
+            className="bg-green-600 px-6 py-2 rounded text-white font-bold"
+          >
+            ⏰ Agendar Envio
+          </button>
+        </div>
+      </div>
+    );
+  };
+
+  if (loading) return <div className="text-white text-center py-20">Carregando...</div>;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-black to-gray-900 text-white flex font-sans">
+      {/* Sidebar */}
       <div className="w-64 bg-[#1c152b] p-6 space-y-4 shadow-xl">
         <h2 className="text-xl font-bold mb-6">📡 Plataformas</h2>
         <button
@@ -513,12 +487,13 @@ export default function Home() {
             auth.signOut();
             navigate("/auth");
           }}
-          className="w-full mt-8 bg-red-600 hover:bg-red-700 py-2 rounded font-bold text-white"
+          className="w-full mt-8 bg-red-600 hover:bg-red-700 py-2 rounded font-bold"
         >
           Sair
         </button>
       </div>
 
+      {/* Conteúdo principal */}
       <div className="flex-1 p-8">
         <div className="bg-[#1c152b] p-6 rounded-xl mb-6 shadow-lg">
           <h1 className="text-3xl font-bold mb-2">👤 Bem-vindo</h1>
