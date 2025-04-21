@@ -48,7 +48,9 @@ export default function Home() {
   useEffect(() => {
     const fetchBroadcastHistory = async () => {
       try {
-        const res = await fetch(`${API_URL}/broadcast-history`);
+        const phone = telegramTokenRef.current?.value;
+        if (!phone) return;
+        const res = await fetch(`${API_URL}/broadcast-history?phone=${phone}`);
         const json = await res.json();
         setBroadcastHistory(json.items || []);
       } catch (err) {
@@ -57,10 +59,11 @@ export default function Home() {
       }
     };
   
-    if (activeTab === "historico") {
+    if (activeTab === "telegram") {
       fetchBroadcastHistory();
     }
   }, [activeTab]);
+  
   
 
   const handleUpgrade = async () => {
@@ -255,7 +258,12 @@ export default function Home() {
     if (activeTab === "historico") {
       return (
         <div>
-          <h3 className="text-2xl font-bold mb-4">📜 Histórico de Envios</h3>
+          <h3 className="text-2xl font-bold mb-2">📜 Histórico de Envios</h3>
+{telegramTokenRef.current?.value && (
+  <p className="text-gray-400 mb-4">
+    Mostrando envios para: {telegramTokenRef.current.value}
+  </p>
+)}
           {broadcastHistory.length === 0 ? (
             <p className="text-gray-400">Nenhum envio registrado ainda.</p>
           ) : (

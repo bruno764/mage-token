@@ -310,10 +310,11 @@ async def schedule_broadcast(
     }
 
 @app.get("/broadcast-history")
-async def broadcast_history(limit: int = Query(default=100, lte=100)):
+async def broadcast_history(phone: str, limit: int = Query(default=100, lte=100)):
     try:
         docs = (
             firestore_db.collection("scheduled_broadcasts")
+            .where("phone", "==", phone)
             .order_by("send_at", direction=firestore.Query.DESCENDING)
             .limit(limit)
             .stream()
@@ -322,3 +323,4 @@ async def broadcast_history(limit: int = Query(default=100, lte=100)):
         return {"items": items}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erro ao buscar histórico: {str(e)}")
+
