@@ -23,6 +23,10 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+cred = credentials.Certificate(os.getenv("FIREBASE_CRED"))
+firebase_admin.initialize_app(cred)
+
+
 # ─── TELEGRAM CONFIG ─────────────────────────────────────────────────────────
 API_ID      = int(os.getenv("API_ID"))
 API_HASH    = os.getenv("API_HASH")

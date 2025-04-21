@@ -6,3 +6,4 @@ python-multipart
 APScheduler==3.10.1
 boto3==1.28.55
 supabase
+firebase-admin
