@@ -347,6 +347,30 @@ export default function Home() {
   >
     🔄 Atualizar Histórico
   </button>
+  
+  {broadcastHistory.length > 0 && (
+  <div className="mt-4 space-y-4">
+    <h4 className="text-xl font-bold">📜 Histórico de Envios</h4>
+    {broadcastHistory.map((item, i) => (
+      <div key={i} className="border border-gray-700 rounded p-4 bg-gray-900">
+        <p><strong>Mensagem:</strong> {item.message}</p>
+        <p><strong>Status:</strong> {item.status}</p>
+        <p><strong>Agendado para:</strong> {new Date(item.send_at._seconds * 1000).toLocaleString()}</p>
+        {item.errors && (
+          <div className="mt-2 text-red-400">
+            <p className="font-semibold">❌ Erros:</p>
+            <ul className="list-disc list-inside text-sm">
+              {Object.entries(item.errors).map(([dest, error], j) => (
+                <li key={j}><strong>{dest}:</strong> {error}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </div>
+    ))}
+  </div>
+)}
+
 </div> {/* fecha o flex gap-2 flex-wrap */}
 
 
