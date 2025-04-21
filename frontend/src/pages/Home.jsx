@@ -17,6 +17,7 @@ export default function Home() {
   const [sessionAuthorized, setSessionAuthorized] = useState(false);
   const [sessionStatus, setSessionStatus] = useState("none"); // 'none' | 'active' | 'inactive'
   const [codeHash, setCodeHash] = useState("");
+  const [broadcastHistory, setBroadcastHistory] = useState([]);
   const navigate = useNavigate();
 
   const messageRef = useRef();
@@ -27,7 +28,7 @@ export default function Home() {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (!user) {
-        navigate("/auth");
+        navigate("/auth")
         return;
       }
       try {
@@ -44,6 +45,23 @@ export default function Home() {
     });
     return () => unsubscribe();
   }, [navigate]);
+  useEffect(() => {
+    const fetchBroadcastHistory = async () => {
+      try {
+        const res = await fetch(`${API_URL}/broadcast-history`);
+        const json = await res.json();
+        setBroadcastHistory(json.items || []);
+      } catch (err) {
+        console.error("Erro ao buscar histórico:", err);
+        alert("Erro ao buscar histórico de envios.");
+      }
+    };
+  
+    if (activeTab === "historico") {
+      fetchBroadcastHistory();
+    }
+  }, [activeTab]);
+  
 
   const handleUpgrade = async () => {
     const user = auth.currentUser;
@@ -234,7 +252,51 @@ export default function Home() {
       };
       return <div>{placeholders[activeTab] || "Selecione uma plataforma."}</div>;
     }
-
+    if (activeTab === "historico") {
+      return (
+        <div>
+          <h3 className="text-2xl font-bold mb-4">📜 Histórico de Envios</h3>
+          {broadcastHistory.length === 0 ? (
+            <p className="text-gray-400">Nenhum envio registrado ainda.</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-sm text-white border border-gray-600">
+                <thead className="bg-gray-800 text-gray-300">
+                  <tr>
+                    <th className="px-4 py-2">📱 Número</th>
+                    <th className="px-4 py-2">📝 Mensagem</th>
+                    <th className="px-4 py-2">🎯 Destinatários</th>
+                    <th className="px-4 py-2">⏰ Envio</th>
+                    <th className="px-4 py-2">📎 Anexo</th>
+                    <th className="px-4 py-2">📊 Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {broadcastHistory.map((item, i) => (
+                    <tr key={i} className="border-t border-gray-700">
+                      <td className="px-4 py-2">{item.phone}</td>
+                      <td className="px-4 py-2">{item.message?.slice(0, 30)}...</td>
+                      <td className="px-4 py-2">{item.recipients?.split(",").length}</td>
+                      <td className="px-4 py-2">
+                        {new Date(item.send_at).toLocaleString()}
+                      </td>
+                      <td className="px-4 py-2">
+                        {item.file_key ? "✅" : "—"}
+                      </td>
+                      <td className="px-4 py-2 capitalize">
+                        {item.status === "sent" ? "✅ Enviado" : "🕒 Pendente"}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      );
+    }
+    
+      
     return (
       <div className="space-y-6">
         <h3 className="text-2xl font-bold">🔮 Disparo via Telegram (Conta Real)</h3>
