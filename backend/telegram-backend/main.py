@@ -120,8 +120,8 @@ async def lifespan(app: FastAPI):
     try:
         docs = (
     firestore_db.collection("scheduled_broadcasts")
-    .where(filter=("status", "==", "pending"))
-    .where(filter=("send_at",  ">",  now))
+    .where("status", "==", "pending")
+    .where("send_at", ">", now)
     .stream()
 )
         for doc in docs:

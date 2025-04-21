@@ -185,6 +185,27 @@ export default function Home() {
     }
   };
 
+  const handleEnviarCodigo = async () => {
+    const phone = telegramTokenRef.current.value;
+    if (!phone) return alert("Digite o número de telefone.");
+    try {
+      const res = await fetch(`${API_URL}/start-login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone }),
+      });
+      const result = await res.json();
+      if (res.ok) {
+        if (result.phone_code_hash) setCodeHash(result.phone_code_hash);
+        alert(result.status);
+      } else {
+        alert(result.detail || "Erro desconhecido ao enviar código.");
+      }
+    } catch (error) {
+      alert(`Erro ao enviar requisição: ${error.message}`);
+    }
+  };
+
   const renderTabContent = () => {
     if (activeTab !== "telegram") {
       const placeholders = {
@@ -209,22 +230,12 @@ export default function Home() {
         />
 
         <button
-          onClick={async () => {
-            const phone = telegramTokenRef.current.value;
-            if (!phone) return alert("Digite o número de telefone.");
-            const res = await fetch(`${API_URL}/start-login`, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ phone }),
-            });
-            const result = await res.json();
-            if (result.phone_code_hash) setCodeHash(result.phone_code_hash);
-            alert(result.status || result.error);
-          }}
-          className="bg-yellow-500 px-4 py-2 rounded text-white font-bold"
-        >
-          📩 Enviar Código
-        </button>
+  onClick={handleEnviarCodigo}
+  className="bg-yellow-500 px-4 py-2 rounded text-white font-bold"
+>
+  📩 Enviar Código
+</button>
+
 
         <input
           type="text"
