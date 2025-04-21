@@ -68,7 +68,6 @@ async def perform_broadcast(
     file_key: str = None,
     job_id: str = None
 ):
-    # baixa arquivo do Supabase, se houver
     local_file = None
     if file_key:
         data = supabase.storage.from_(BUCKET).download(file_key)
@@ -92,7 +91,6 @@ async def perform_broadcast(
 
     await client.disconnect()
 
-    # marca como enviado no Firestore se veio de agendamento
     if job_id:
         firestore_db.collection("scheduled_broadcasts") \
             .document(job_id) \
@@ -107,7 +105,6 @@ async def perform_broadcast(
 # ─── LIFESPAN PARA REAGENDAR JOBS PENDENTES ──────────────────────────────────
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # startup: puxa e re­agenda pendentes
     now = datetime.utcnow()
     docs = (
         firestore_db.collection("scheduled_broadcasts")
@@ -133,13 +130,19 @@ async def lifespan(app: FastAPI):
             replace_existing=True
         )
     yield
-    # aqui poderia ir código de shutdown, se necessário
+    # aqui poderia vir código de shutdown, se necessário
 
 # ─── FASTAPI & CORS ──────────────────────────────────────────────────────────
+# defina aqui as origens que seu front usa:
+origins = [
+    "https://mage-token.vercel.app",
+    "http://localhost:3000",
+]
+
 app = FastAPI(lifespan=lifespan)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
