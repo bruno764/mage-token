@@ -4,6 +4,7 @@ import os
 import shutil
 from uuid import uuid4
 from datetime import datetime
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -21,48 +22,36 @@ from firebase_admin import credentials, firestore
 
 from dotenv import load_dotenv
 
+# ─── CARREGA VARIÁVEIS DE AMBIENTE ────────────────────────────────────────────
 load_dotenv()
 
+# ─── INICIALIZAÇÃO DO FIREBASE ────────────────────────────────────────────────
 cred = credentials.Certificate(os.getenv("FIREBASE_CRED"))
-firebase_admin.initialize_app(cred)
+if not firebase_admin._apps:
+    firebase_admin.initialize_app(cred)
+firestore_db = firestore.client()
 
-
-# ─── TELEGRAM CONFIG ─────────────────────────────────────────────────────────
+# ─── CONFIGURAÇÃO DO TELEGRAM ─────────────────────────────────────────────────
 API_ID      = int(os.getenv("API_ID"))
 API_HASH    = os.getenv("API_HASH")
 SESSION_DIR = "sessions"
 os.makedirs(SESSION_DIR, exist_ok=True)
 
-# ─── TEMP STORAGE ─────────────────────────────────────────────────────────────
+# ─── ARMAZENAMENTO TEMPORÁRIO ─────────────────────────────────────────────────
 TEMP_DIR = "temp"
 os.makedirs(TEMP_DIR, exist_ok=True)
 
-# ─── SUPABASE STORAGE ─────────────────────────────────────────────────────────
-SUPABASE_URL   = os.getenv("SUPABASE_URL")     # e.g. https://xyzcompany.supabase.co
-SUPABASE_KEY   = os.getenv("SUPABASE_KEY")     # service_role key
-BUCKET         = os.getenv("SUPABASE_BUCKET")  # e.g. "broadcast-files"
+# ─── CONFIGURAÇÃO DO SUPABASE ─────────────────────────────────────────────────
+SUPABASE_URL   = os.getenv("SUPABASE_URL")
+SUPABASE_KEY   = os.getenv("SUPABASE_KEY")
+BUCKET         = os.getenv("SUPABASE_BUCKET")
 supabase       = create_client(SUPABASE_URL, SUPABASE_KEY)
 
-# ─── FIRESTORE CONFIG ─────────────────────────────────────────────────────────
-cred = credentials.Certificate(os.getenv("FIREBASE_CRED"))
-firebase_admin.initialize_app(cred)
-firestore_db = firestore.client()
-
-# ─── FASTAPI & CORS ──────────────────────────────────────────────────────────
-app = FastAPI()
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],        # aceita todas as origens
-    allow_credentials=True,
-    allow_methods=["*"],        # GET, POST, OPTIONS…
-    allow_headers=["*"],        # Content‑Type, Authorization…
-)
-
-# ─── SCHEDULER ────────────────────────────────────────────────────────────────
+# ─── AGENDADOR ───────────────────────────────────────────────────────────────
 scheduler = AsyncIOScheduler()
 scheduler.start()
 
-# ─── DATA MODELS ──────────────────────────────────────────────────────────────
+# ─── MODELOS DE DADOS ─────────────────────────────────────────────────────────
 class PhoneNumber(BaseModel):
     phone: str
 
@@ -71,7 +60,7 @@ class VerifyCode(BaseModel):
     code: str
     phone_code_hash: str
 
-# ─── BROADCAST HELPER ─────────────────────────────────────────────────────────
+# ─── FUNÇÃO AUXILIAR DE BROADCAST ─────────────────────────────────────────────
 async def perform_broadcast(
     phone: str,
     message: str,
@@ -79,7 +68,7 @@ async def perform_broadcast(
     file_key: str = None,
     job_id: str = None
 ):
-    # download file from Supabase storage if provided
+    # baixa arquivo do Supabase, se houver
     local_file = None
     if file_key:
         data = supabase.storage.from_(BUCKET).download(file_key)
@@ -90,8 +79,7 @@ async def perform_broadcast(
     client = TelegramClient(f"{SESSION_DIR}/{phone}", API_ID, API_HASH)
     await client.connect()
 
-    recs = [r.strip() for r in recipients.split(",")]
-    for r in recs:
+    for r in [r.strip() for r in recipients.split(",")]:
         try:
             target = int(r) if r.lstrip("-").isdigit() else r
             entity = await client.get_entity(target)
@@ -104,7 +92,7 @@ async def perform_broadcast(
 
     await client.disconnect()
 
-    # if this was a scheduled job, mark it as sent in Firestore
+    # marca como enviado no Firestore se veio de agendamento
     if job_id:
         firestore_db.collection("scheduled_broadcasts") \
             .document(job_id) \
@@ -116,9 +104,10 @@ async def perform_broadcast(
     if local_file and os.path.exists(local_file):
         os.remove(local_file)
 
-# ─── RE-SCHEDULE PENDING JOBS ON STARTUP ─────────────────────────────────────
-@app.on_event("startup")
-async def load_scheduled_jobs():
+# ─── LIFESPAN PARA REAGENDAR JOBS PENDENTES ──────────────────────────────────
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # startup: puxa e re­agenda pendentes
     now = datetime.utcnow()
     docs = (
         firestore_db.collection("scheduled_broadcasts")
@@ -143,6 +132,18 @@ async def load_scheduled_jobs():
             id=job_id,
             replace_existing=True
         )
+    yield
+    # aqui poderia ir código de shutdown, se necessário
+
+# ─── FASTAPI & CORS ──────────────────────────────────────────────────────────
+app = FastAPI(lifespan=lifespan)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # ─── ENDPOINTS ────────────────────────────────────────────────────────────────
 @app.get("/")
@@ -214,7 +215,11 @@ async def list_dialogs(data: PhoneNumber):
             else:
                 tipo = "group"
             resultado.append({
-                "chat": {"id": ent.id, "title": getattr(ent, "title", None), "type": tipo}
+                "chat": {
+                    "id": ent.id,
+                    "title": getattr(ent, "title", None),
+                    "type": tipo
+                }
             })
     return {"dialogs": resultado}
 
@@ -231,7 +236,6 @@ async def send_broadcast(
         file_key = f"immediate/{uuid4().hex}_{file.filename}"
         supabase.storage.from_(BUCKET).upload(file_key, raw)
 
-    # immediate send, no job_id
     await perform_broadcast(phone, message, recipients, file_key, job_id=None)
     return {"status": f"Broadcast enviado para {recipients} ✅"}
 
@@ -252,7 +256,6 @@ async def schedule_broadcast(
         file_key = f"scheduled/{uuid4().hex}_{file.filename}"
         supabase.storage.from_(BUCKET).upload(file_key, raw)
 
-    # generate job ID and save to Firestore
     job_id = uuid4().hex
     firestore_db.collection("scheduled_broadcasts").document(job_id).set({
         "phone":      phone,
@@ -264,7 +267,6 @@ async def schedule_broadcast(
         "created_at": datetime.utcnow()
     })
 
-    # schedule via APScheduler
     trigger = DateTrigger(run_date=send_at)
     scheduler.add_job(
         perform_broadcast,
