@@ -52,13 +52,10 @@ firestore_db = firestore.client()
 app = FastAPI()
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "https://mage-token-production.up.railway.app",
-        "https://mage-token.vercel.app",
-    ],
+    allow_origins=["*"],        # aceita todas as origens
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["*"],        # GET, POST, OPTIONS…
+    allow_headers=["*"],        # Content‑Type, Authorization…
 )
 
 # ─── SCHEDULER ────────────────────────────────────────────────────────────────
