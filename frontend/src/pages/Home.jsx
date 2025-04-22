@@ -361,7 +361,11 @@ export default function Home() {
         <div key={i} className="border border-gray-700 rounded p-4 bg-gray-900">
           <p><strong>Mensagem:</strong> {item.message}</p>
           <p><strong>Status:</strong> {item.status === "sent" ? "✅ Enviado" : "🕓 Pendente"}</p>
-          <p><strong>Agendado para:</strong> {new Date(item.send_at._seconds * 1000).toLocaleString()}</p>
+          <p><strong>Agendado para:</strong> {
+  item.send_at?.seconds
+    ? new Date(item.send_at.seconds * 1000).toLocaleString()
+    : "Data inválida"
+}</p>
           <div className="mt-1">
             <span className="text-green-400 font-semibold">✔️ Sucesso: {successCount}</span>{" "}
             <span className="text-red-400 font-semibold ml-4">❌ Erros: {errorCount}</span>
