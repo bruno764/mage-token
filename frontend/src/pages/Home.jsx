@@ -45,24 +45,25 @@ export default function Home() {
     });
     return () => unsubscribe();
   }, [navigate]);
-  useEffect(() => {
-    const fetchBroadcastHistory = async () => {
-      try {
-        const phone = telegramTokenRef.current?.value;
-        if (!phone) return;
-        const res = await fetch(`${API_URL}/broadcast-history?phone=${phone}`);
-        const json = await res.json();
-        setBroadcastHistory(json.items || []);
-      } catch (err) {
-        console.error("Erro ao buscar histórico:", err);
-        alert("Erro ao buscar histórico de envios.");
-      }
-    };
-  
-    if (activeTab === "telegram" && telegramTokenRef.current?.value) {
-      fetchBroadcastHistory();
-    }    
-  }, [activeTab]);
+  // Função para buscar histórico de disparos
+const fetchBroadcastHistory = async () => {
+  try {
+    const phone = telegramTokenRef.current?.value;
+    if (!phone) return;
+    const res = await fetch(`${API_URL}/broadcast-history?phone=${phone}`);
+    const json = await res.json();
+    setBroadcastHistory(json.items || []);
+  } catch (err) {
+    console.error("Erro ao buscar histórico:", err);
+    alert("Erro ao buscar histórico de envios.");
+  }
+};
+
+useEffect(() => {
+  if (activeTab === "telegram" && telegramTokenRef.current?.value) {
+    fetchBroadcastHistory();
+  }
+}, [activeTab]);
   
   
 
@@ -334,19 +335,11 @@ export default function Home() {
   </button>
 
   <button
-    onClick={() => {
-      const phone = telegramTokenRef.current?.value;
-      if (phone) {
-        fetch(`${API_URL}/broadcast-history?phone=${phone}`)
-          .then((res) => res.json())
-          .then((json) => setBroadcastHistory(json.items || []))
-          .catch(() => alert("Erro ao atualizar histórico"));
-      }
-    }}
-    className="bg-gray-600 px-4 py-2 rounded text-white font-bold"
-  >
-    🔄 Atualizar Histórico
-  </button>
+  onClick={fetchBroadcastHistory}
+  className="bg-gray-600 px-4 py-2 rounded text-white font-bold"
+>
+  🔄 Atualizar Histórico
+</button>
   
   {broadcastHistory.length > 0 && (
   <div className="mt-8 space-y-4">
