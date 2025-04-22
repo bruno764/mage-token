@@ -348,7 +348,7 @@ export default function Home() {
   >
     🔄 Atualizar Histórico
   </button>
-
+  
   {broadcastHistory.length > 0 && (
   <div className="mt-4 space-y-4">
     <h4 className="text-xl font-bold">📜 Histórico de Envios</h4>
