@@ -373,27 +373,27 @@ async def broadcast_history(phone: str, limit: int = Query(default=100, lte=100)
         docs_ref = (
             firestore_db.collection("scheduled_broadcasts")
             .where("phone", "==", phone)
-            .order_by("send_at", direction=firestore.Query.DESCENDING)
             .limit(limit)
         )
 
-        docs = docs_ref.stream()
-        items = []
-        for doc in docs:
-            try:
-                item = doc.to_dict()
-                items.append(item)
-            except Exception as parse_error:
-                print(f"⚠️ Erro ao converter documento {doc.id}: {parse_error}")
-                continue
+        all_docs = docs_ref.stream()
+        valid_docs = []
 
-        return {"items": items}
+        for doc in all_docs:
+            data = doc.to_dict()
+            send_at = data.get("send_at")
+            if isinstance(send_at, datetime) or hasattr(send_at, "timestamp"):
+                valid_docs.append((send_at, data))
+
+        # Ordena manualmente os documentos por `send_at` desc
+        valid_docs.sort(key=lambda x: x[0], reverse=True)
+
+        return {"items": [data for _, data in valid_docs]}
 
     except Exception as e:
-        print("🔥 Erro crítico no broadcast-history:")
-        traceback.print_exc()  # mostra o stack trace no console da Railway
+        import traceback
+        traceback.print_exc()
         return JSONResponse(
             status_code=500,
             content={"detail": f"Erro ao buscar histórico: {str(e)}"},
         )
-
