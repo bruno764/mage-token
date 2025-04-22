@@ -52,6 +52,7 @@ export default function Home() {
         if (!phone) return;
         const res = await fetch(`${API_URL}/broadcast-history?phone=${phone}`);
         const json = await res.json();
+        console.log("Histórico recebido:", json.items);
         setBroadcastHistory(json.items || []);
       } catch (err) {
         console.error("Erro ao buscar histórico:", err);
@@ -347,7 +348,7 @@ export default function Home() {
   >
     🔄 Atualizar Histórico
   </button>
-  
+
   {broadcastHistory.length > 0 && (
   <div className="mt-4 space-y-4">
     <h4 className="text-xl font-bold">📜 Histórico de Envios</h4>
