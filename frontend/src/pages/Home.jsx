@@ -349,25 +349,36 @@ export default function Home() {
   </button>
   
   {broadcastHistory.length > 0 && (
-  <div className="mt-4 space-y-4">
+  <div className="mt-8 space-y-4">
     <h4 className="text-xl font-bold">📜 Histórico de Envios</h4>
-    {broadcastHistory.map((item, i) => (
-      <div key={i} className="border border-gray-700 rounded p-4 bg-gray-900">
-        <p><strong>Mensagem:</strong> {item.message}</p>
-        <p><strong>Status:</strong> {item.status}</p>
-        <p><strong>Agendado para:</strong> {new Date(item.send_at._seconds * 1000).toLocaleString()}</p>
-        {item.errors && (
-          <div className="mt-2 text-red-400">
-            <p className="font-semibold">❌ Erros:</p>
-            <ul className="list-disc list-inside text-sm">
-              {Object.entries(item.errors).map(([dest, error], j) => (
-                <li key={j}><strong>{dest}:</strong> {error}</li>
-              ))}
-            </ul>
+    {broadcastHistory.map((item, i) => {
+      const total = (item.recipients || "").split(",").filter(Boolean).length;
+      const errorCount = item.errors ? Object.keys(item.errors).length : 0;
+      const successCount = total - errorCount;
+
+      return (
+        <div key={i} className="border border-gray-700 rounded p-4 bg-gray-900">
+          <p><strong>Mensagem:</strong> {item.message}</p>
+          <p><strong>Status:</strong> {item.status === "sent" ? "✅ Enviado" : "🕓 Pendente"}</p>
+          <p><strong>Agendado para:</strong> {new Date(item.send_at._seconds * 1000).toLocaleString()}</p>
+          <div className="mt-1">
+            <span className="text-green-400 font-semibold">✔️ Sucesso: {successCount}</span>{" "}
+            <span className="text-red-400 font-semibold ml-4">❌ Erros: {errorCount}</span>
           </div>
-        )}
-      </div>
-    ))}
+
+          {item.errors && (
+            <div className="mt-3 text-red-400">
+              <p className="font-semibold">Detalhes dos Erros:</p>
+              <ul className="list-disc list-inside text-sm">
+                {Object.entries(item.errors).map(([dest, error], j) => (
+                  <li key={j}><strong>{dest}:</strong> {error}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+      );
+    })}
   </div>
 )}
 
