@@ -13,6 +13,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.date import DateTrigger
+from fastapi.responses import JSONResponse
+
 
 from telethon.sync import TelegramClient
 from telethon.errors.rpcerrorlist import FloodWaitError
@@ -20,6 +22,7 @@ from telethon.tl.functions.contacts import GetContactsRequest
 from telethon.tl.types import User, Chat, Channel
 from telethon.tl.functions.contacts import ImportContactsRequest
 from telethon.tl.types import InputPhoneContact
+import traceback
 
 
 from supabase import create_client
@@ -367,15 +370,30 @@ async def schedule_broadcast(
 @app.get("/broadcast-history")
 async def broadcast_history(phone: str, limit: int = Query(default=100, lte=100)):
     try:
-        docs = (
+        docs_ref = (
             firestore_db.collection("scheduled_broadcasts")
             .where("phone", "==", phone)
             .order_by("send_at", direction=firestore.Query.DESCENDING)
             .limit(limit)
-            .stream()
         )
-        items = [doc.to_dict() for doc in docs]
+
+        docs = docs_ref.stream()
+        items = []
+        for doc in docs:
+            try:
+                item = doc.to_dict()
+                items.append(item)
+            except Exception as parse_error:
+                print(f"⚠️ Erro ao converter documento {doc.id}: {parse_error}")
+                continue
+
         return {"items": items}
+
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Erro ao buscar histórico: {str(e)}")
+        print("🔥 Erro crítico no broadcast-history:")
+        traceback.print_exc()  # mostra o stack trace no console da Railway
+        return JSONResponse(
+            status_code=500,
+            content={"detail": f"Erro ao buscar histórico: {str(e)}"},
+        )
 
