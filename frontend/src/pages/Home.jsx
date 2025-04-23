@@ -351,50 +351,51 @@ export default function Home() {
   </button>
   
   {broadcastHistory.length > 0 && (
-  <div className="grid grid-cols-1 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-4 mt-6">
+  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mt-6">
     <h4 className="text-xl font-bold col-span-full">📜 Histórico de Envios</h4>
-    {broadcastHistory.map((item, i) => {
-            console.log("send_at bruto:", item.send_at); // 👈 ADICIONE ISSO
-      const total = (item.recipients || "").split(",").filter(Boolean).length;
-      const errorCount = item.errors ? Object.keys(item.errors).length : 0;
-      const successCount = total - errorCount;
+    {broadcastHistory
+      .slice(0, 8) // Mostra apenas os 8 mais recentes
+      .map((item, i) => {
+        const total = (item.recipients || "").split(",").filter(Boolean).length;
+        const errorCount = item.errors ? Object.keys(item.errors).length : 0;
+        const successCount = total - errorCount;
 
-      return (
-        <div key={i} className="rounded-lg shadow-md bg-[#1f1f2e] border border-gray-700 p-4">
-          <div className="flex justify-between items-center mb-2">
-            <h5 className="text-white font-bold">📨 Disparo {i + 1}</h5>
-            <span className={`text-sm px-2 py-1 rounded ${item.status === "sent" ? "bg-green-700 text-white" : "bg-yellow-700 text-white"}`}>
-              {item.status === "sent" ? "✅ Enviado" : "⏳ Pendente"}
-            </span>
+        return (
+          <div key={i} className="rounded-lg shadow-md bg-[#1f1f2e] border border-gray-700 p-4">
+            <div className="flex justify-between items-center mb-2">
+              <h5 className="text-white font-bold">📨 Disparo {i + 1}</h5>
+              <span className={`text-sm px-2 py-1 rounded ${item.status === "sent" ? "bg-green-700 text-white" : "bg-yellow-700 text-white"}`}>
+                {item.status === "sent" ? "✅ Enviado" : "⏳ Pendente"}
+              </span>
+            </div>
+            <p className="text-sm text-gray-300"><strong>Mensagem:</strong> {item.message}</p>
+            <p className="text-sm text-gray-400">
+              <strong>Agendado para:</strong>{" "}
+              {item.send_at?._seconds
+                ? new Date(item.send_at._seconds * 1000).toLocaleString("pt-BR")
+                : "Data inválida"}
+            </p>
+            <div className="mt-2 text-sm">
+              <span className="text-green-400 mr-4">✔️ Sucesso: {successCount}</span>
+              <span className="text-red-400">❌ Erros: {errorCount}</span>
+            </div>
+
+            {item.errors && (
+              <details className="mt-2">
+                <summary className="text-red-300 cursor-pointer">Ver detalhes dos erros</summary>
+                <ul className="list-disc list-inside text-sm mt-1 text-red-200">
+                  {Object.entries(item.errors).map(([dest, err], j) => (
+                    <li key={j}><strong>{dest}:</strong> {err}</li>
+                  ))}
+                </ul>
+              </details>
+            )}
           </div>
-          <p className="text-sm text-gray-300"><strong>Mensagem:</strong> {item.message}</p>
-          <p className="text-sm text-gray-400">
-            <strong>Agendado para:</strong>{" "}
-            {item.send_at?._seconds
-  ? new Date(item.send_at._seconds * 1000).toLocaleString("pt-BR")
-  : "Data inválida"}
-
-          </p>
-          <div className="mt-2 text-sm">
-            <span className="text-green-400 mr-4">✔️ Sucesso: {successCount}</span>
-            <span className="text-red-400">❌ Erros: {errorCount}</span>
-          </div>
-
-          {item.errors && (
-            <details className="mt-2">
-              <summary className="text-red-300 cursor-pointer">Ver detalhes dos erros</summary>
-              <ul className="list-disc list-inside text-sm mt-1 text-red-200">
-                {Object.entries(item.errors).map(([dest, err], j) => (
-                  <li key={j}><strong>{dest}:</strong> {err}</li>
-                ))}
-              </ul>
-            </details>
-          )}
-        </div>
-      );
-    })}
+        );
+      })}
   </div>
 )}
+
 
 
 
