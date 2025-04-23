@@ -354,6 +354,7 @@ export default function Home() {
   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
     <h4 className="text-xl font-bold col-span-full">📜 Histórico de Envios</h4>
     {broadcastHistory.map((item, i) => {
+            console.log("send_at bruto:", item.send_at); // 👈 ADICIONE ISSO
       const total = (item.recipients || "").split(",").filter(Boolean).length;
       const errorCount = item.errors ? Object.keys(item.errors).length : 0;
       const successCount = total - errorCount;
