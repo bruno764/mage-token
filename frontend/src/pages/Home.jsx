@@ -338,7 +338,7 @@ export default function Home() {
     onClick={() => {
       const phone = telegramTokenRef.current?.value;
       if (phone) {
-        fetch(`${API_URL}/broadcast-history?phone=${phone}`)
+        fetch(`${API_URL}/broadcast-history?phone=${encodeURIComponent(phone)}`)
           .then((res) => res.json())
           .then((json) => setBroadcastHistory(json.items || []))
           .catch(() => alert("Erro ao atualizar histórico"));
