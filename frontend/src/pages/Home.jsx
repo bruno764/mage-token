@@ -369,9 +369,9 @@ export default function Home() {
           <p className="text-sm text-gray-300"><strong>Mensagem:</strong> {item.message}</p>
           <p className="text-sm text-gray-400">
             <strong>Agendado para:</strong>{" "}
-            {(item.send_at?.seconds || item.send_at?._seconds)
-  ? new Date((item.send_at.seconds || item.send_at._seconds) * 1000).toLocaleString("pt-BR")
-  : "Data inválida"}
+            {item.send_at?._seconds
+              ? new Date(item.send_at._seconds * 1000).toLocaleString("pt-BR")
+              : "Data inválida"}
           </p>
           <div className="mt-2 text-sm">
             <span className="text-green-400 mr-4">✔️ Sucesso: {successCount}</span>
@@ -393,6 +393,7 @@ export default function Home() {
     })}
   </div>
 )}
+
 
 
 </div> {/* fecha o flex gap-2 flex-wrap */}
