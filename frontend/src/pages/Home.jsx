@@ -351,7 +351,7 @@ export default function Home() {
   </button>
   
   {broadcastHistory.length > 0 && (
-  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
+  <div className="grid grid-cols-1 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-4 mt-6">
     <h4 className="text-xl font-bold col-span-full">📜 Histórico de Envios</h4>
     {broadcastHistory.map((item, i) => {
             console.log("send_at bruto:", item.send_at); // 👈 ADICIONE ISSO
@@ -370,8 +370,8 @@ export default function Home() {
           <p className="text-sm text-gray-300"><strong>Mensagem:</strong> {item.message}</p>
           <p className="text-sm text-gray-400">
             <strong>Agendado para:</strong>{" "}
-            {item.send_at instanceof Date
-  ? item.send_at.toLocaleString("pt-BR")
+            {item.send_at?._seconds
+  ? new Date(item.send_at._seconds * 1000).toLocaleString("pt-BR")
   : "Data inválida"}
 
           </p>
