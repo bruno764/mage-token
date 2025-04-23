@@ -308,28 +308,29 @@ export default function Home() {
           <div className="text-green-400 font-semibold">🟢 Conectado</div>
         )}
 
-        <div className="flex gap-2 flex-wrap">
-        <div className="flex items-center gap-2">
-  <button
-    onClick={handleCheckSession}
-    className="bg-purple-500 px-4 py-2 rounded text-white font-bold"
-  >
-    🔍 Verificar Sessão
-  </button>
+<div className="flex flex-wrap gap-2">
+  <div className="flex items-center gap-2 w-auto">
+    <button
+      onClick={handleCheckSession}
+      className="bg-purple-500 px-4 py-2 rounded text-white font-bold w-auto"
+    >
+      🔍 Verificar Sessão
+    </button>
 
-  {sessionStatus === "active" && (
-    <span className="text-green-400 font-bold">🟢 Ativa</span>
-  )}
-  {sessionStatus === "inactive" && (
-    <span className="text-red-400 font-bold">🔴 Inativa</span>
-  )}
-  {sessionStatus === "none" && (
-    <span className="text-gray-400 font-bold">⚪️ Desconhecida</span>
-  )}
-</div>
-<button
+    {sessionStatus === "active" && (
+      <span className="text-green-400 font-bold">🟢 Ativa</span>
+    )}
+    {sessionStatus === "inactive" && (
+      <span className="text-red-400 font-bold">🔴 Inativa</span>
+    )}
+    {sessionStatus === "none" && (
+      <span className="text-gray-400 font-bold">⚪️ Desconhecida</span>
+    )}
+  </div>
+
+  <button
     onClick={handleListContacts}
-    className="bg-cyan-600 px-4 py-2 rounded text-white font-bold"
+    className="bg-cyan-600 px-4 py-2 rounded text-white font-bold w-auto"
   >
     📇 Listar Contatos & Grupos
   </button>
@@ -344,7 +345,7 @@ export default function Home() {
           .catch(() => alert("Erro ao atualizar histórico"));
       }
     }}
-    className="bg-gray-600 px-4 py-2 rounded text-white font-bold"
+    className="bg-gray-600 px-4 py-2 rounded text-white font-bold w-auto"
   >
     🔄 Atualizar Histórico
   </button>
@@ -368,7 +369,9 @@ export default function Home() {
           <p className="text-sm text-gray-300"><strong>Mensagem:</strong> {item.message}</p>
           <p className="text-sm text-gray-400">
             <strong>Agendado para:</strong>{" "}
-            {item.send_at?.seconds ? new Date(item.send_at.seconds * 1000).toLocaleString("pt-BR") : "Data inválida"}
+            {(item.send_at?.seconds || item.send_at?._seconds)
+  ? new Date((item.send_at.seconds || item.send_at._seconds) * 1000).toLocaleString("pt-BR")
+  : "Data inválida"}
           </p>
           <div className="mt-2 text-sm">
             <span className="text-green-400 mr-4">✔️ Sucesso: {successCount}</span>
