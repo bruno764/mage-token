@@ -323,12 +323,17 @@ export default function Home() {
     return (
       <div className="space-y-6">
         <h3 className="text-2xl font-bold">🔮 Disparo via Telegram (Conta Real)</h3>
-
+    
+        {/* ✅ Aqui está certo */}
+        {renderTooltipBlocked()}
+        {renderSuccessLinkMessage()}
+    
         <input
           placeholder="Seu número de telefone (+55...)"
           ref={telegramTokenRef}
           className="w-full p-3 rounded bg-gray-800 text-white placeholder-gray-400"
         />
+    
 
         <button
   onClick={handleEnviarCodigo}
@@ -359,6 +364,7 @@ export default function Home() {
             if (result.status) {
               alert(result.status);
               setSessionAuthorized(true);
+              setSuccessLinkMessage(true);
             } else {
               alert(result.error);
             }
@@ -852,14 +858,6 @@ export default function Home() {
         <div className="bg-[#1a1a2e] p-6 rounded-xl shadow-md min-h-[300px]">
           <h2 className="text-xl font-bold mb-4">🔧 Área de Controle</h2>
           {renderTooltipBlocked()}
-{renderSuccessLinkMessage()}
-
-<input
-  placeholder="Seu número de telefone (+55...)"
-  ref={telegramTokenRef}
-  className="w-full p-3 rounded bg-gray-800 text-white placeholder-gray-400"
-/>
-
         </div>
       </div>
     </div>
