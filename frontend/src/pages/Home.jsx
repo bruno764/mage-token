@@ -307,8 +307,7 @@ export default function Home() {
             const res = await fetch(`${API_URL}/verify-code`, {
               method: "POST",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ phone, code, phone_code_hash: codeHash }),
-              uid: user?.uid,
+              body: JSON.stringify({ phone, code, phone_code_hash: codeHash, uid: auth.currentUser?.uid }),
             });
             const result = await res.json();
             if (result.status) {
