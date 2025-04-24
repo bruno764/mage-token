@@ -174,31 +174,55 @@ export default function Home() {
 
   const handleListContacts = async () => {
     const phone = telegramTokenRef.current.value;
-    const usersRes = await fetch(`${API_URL}/list-contacts`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ phone }),
-    });
-    const groupsRes = await fetch(`${API_URL}/list-dialogs`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ phone }),
-    });
-    const usersJson = await usersRes.json();
-    const groupsJson = await groupsRes.json();
-
-    const onlyContacts = (usersJson.contacts || []).filter(
-      (c) => c.username || c.phone
-    );
-    const onlyGroups = (groupsJson.dialogs || []).filter((d) =>
-      ["group", "supergroup", "channel"].includes(d.chat?.type)
-    );
-
-    setContacts({ users: onlyContacts, groups: onlyGroups });
-    setSelectedContacts([]);
-    alert("📋 Lista de usuários e grupos carregada.");
+    try {
+      const token = await auth.currentUser.getIdToken(); // 🔐 envia token
+      const usersRes = await fetch(`${API_URL}/list-contacts`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ phone }),
+      });
+  
+      if (!usersRes.ok) {
+        const err = await usersRes.json();
+        throw new Error(err.detail || "Erro ao buscar contatos");
+      }
+  
+      const groupsRes = await fetch(`${API_URL}/list-dialogs`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ phone }),
+      });
+  
+      if (!groupsRes.ok) {
+        const err = await groupsRes.json();
+        throw new Error(err.detail || "Erro ao buscar grupos");
+      }
+  
+      const usersJson = await usersRes.json();
+      const groupsJson = await groupsRes.json();
+  
+      const onlyContacts = (usersJson.contacts || []).filter(
+        (c) => c.username || c.phone
+      );
+      const onlyGroups = (groupsJson.dialogs || []).filter((d) =>
+        ["group", "supergroup", "channel"].includes(d.chat?.type)
+      );
+  
+      setContacts({ users: onlyContacts, groups: onlyGroups });
+      setSelectedContacts([]);
+      alert("📋 Lista de usuários e grupos carregada.");
+    } catch (error) {
+      console.error("Erro ao listar contatos/grupos:", error.message);
+      alert("❌ Ação não permitida: " + error.message);
+    }
   };
-
+  
   // Envio imediato
   const handleSendNow = async () => {
     const phone = telegramTokenRef.current.value;
