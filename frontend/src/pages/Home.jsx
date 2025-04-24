@@ -368,7 +368,30 @@ export default function Home() {
                 {item.status === "sent" ? "✅ Enviado" : "⏳ Pendente"}
               </span>
             </div>
-            <p className="text-sm text-gray-300"><strong>Mensagem:</strong> {item.message}</p>
+            <div className="text-sm text-gray-300">
+  <strong>Mensagem:</strong>{" "}
+  <div className="relative">
+    <p
+      className={`whitespace-pre-line ${
+        item.showFull ? "" : "line-clamp-3"
+      } transition-all duration-300`}
+    >
+      {item.message}
+    </p>
+    {item.message.length > 150 && (
+      <button
+        className="text-blue-400 text-xs mt-1 underline"
+        onClick={() => {
+          const updated = [...broadcastHistory];
+          updated[i].showFull = !updated[i].showFull;
+          setBroadcastHistory(updated);
+        }}
+      >
+        {item.showFull ? "Mostrar menos" : "Mostrar mais"}
+      </button>
+    )}
+  </div>
+</div>
             <p className="text-sm text-gray-400">
               <strong>Agendado para:</strong>{" "}
               {item.send_at?._seconds
