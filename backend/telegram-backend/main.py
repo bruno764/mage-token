@@ -342,10 +342,20 @@ async def unlink_phone(data: dict, current_uid: str = Depends(get_current_user))
 
     doc = firestore_db.collection("phone_ownership").document(phone).get()
     if doc.exists and doc.to_dict().get("uid") == current_uid:
+        # 🔒 Remove vínculo no Firestore
         firestore_db.collection("phone_ownership").document(phone).delete()
+
+        # 🔥 Remove sessão local (arquivo .session e .session-journal)
+        session_path = f"{SESSION_DIR}/{phone}.session"
+        if os.path.exists(session_path):
+            os.remove(session_path)
+        if os.path.exists(session_path + "-journal"):
+            os.remove(session_path + "-journal")
+
         return {"status": "Número desvinculado"}
     else:
         raise HTTPException(status_code=403, detail="Você não tem permissão para desvincular esse número.")
+
 
 @app.post("/list-contacts")
 async def list_contacts(data: PhoneNumber, current_uid: str = Depends(get_current_user)):
