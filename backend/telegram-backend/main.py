@@ -224,7 +224,22 @@ def root():
     return {"status": "Servidor ativo com Telethon ✅"}
 
 @app.post("/start-login")
-async def start_login(data: PhoneNumber):
+async def start_login(data: PhoneNumber, request: Request):
+    uid = None
+    auth_header = request.headers.get("Authorization")
+    if auth_header and auth_header.startswith("Bearer "):
+        try:
+            token = auth_header.split("Bearer ")[1]
+            decoded = firebase_auth.verify_id_token(token)
+            uid = decoded["uid"]
+        except:
+            pass
+
+    # Bloqueia se o número estiver vinculado a outro UID
+    doc = firestore_db.collection("phone_ownership").document(data.phone).get()
+    if doc.exists and uid and doc.to_dict().get("uid") != uid:
+        raise HTTPException(status_code=403, detail="Este número está vinculado a outra conta.")
+
     restore_session_if_needed(data.phone)
     client = TelegramClient(f"{SESSION_DIR}/{data.phone}", API_ID, API_HASH)
     await client.connect()
@@ -241,6 +256,7 @@ async def start_login(data: PhoneNumber):
         "status": "Código enviado com sucesso",
         "phone_code_hash": result.phone_code_hash
     }
+
 
 @app.post("/verify-code")
 async def verify_code(data: dict):
@@ -289,13 +305,28 @@ async def verify_code(data: dict):
 
 
 @app.post("/check-session")
-async def check_session(data: PhoneNumber):
+async def check_session(data: PhoneNumber, request: Request):
+    uid = None
+    auth_header = request.headers.get("Authorization")
+    if auth_header and auth_header.startswith("Bearer "):
+        try:
+            token = auth_header.split("Bearer ")[1]
+            decoded = firebase_auth.verify_id_token(token)
+            uid = decoded["uid"]
+        except:
+            pass
+
+    doc = firestore_db.collection("phone_ownership").document(data.phone).get()
+    if doc.exists and uid and doc.to_dict().get("uid") != uid:
+        raise HTTPException(status_code=403, detail="Este número está vinculado a outra conta.")
+
     restore_session_if_needed(data.phone)
     client = TelegramClient(f"{SESSION_DIR}/{data.phone}", API_ID, API_HASH)
     await client.connect()
     authorized = await client.is_user_authorized()
     await client.disconnect()
     return {"authorized": authorized}
+
 
 @app.post("/unlink-phone")
 async def unlink_phone(data: dict, current_uid: str = Depends(get_current_user)):
