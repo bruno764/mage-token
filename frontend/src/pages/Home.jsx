@@ -348,28 +348,34 @@ export default function Home() {
 
   {sessionStatus === "active" && (
   <button
-    onClick={async () => {
-      const phone = telegramTokenRef.current.value;
-      if (!phone) return alert("Informe o número.");
-
-      const res = await fetch(`${API_URL}/unlink-phone`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ phone }),
-headers: {
-  "Content-Type": "application/json",
-  Authorization: `Bearer ${await auth.currentUser.getIdToken()}`,
-},
-      });
-      const result = await res.json();
-      if (res.ok) {
-        alert("📴 Número desvinculado com sucesso.");
-        setSessionAuthorized(false);
-        setSessionStatus("none");
-      } else {
-        alert(result.detail || "Erro ao desvincular.");
-      }
-    }}
+  onClick={async () => {
+    const phone = telegramTokenRef.current.value;
+    if (!phone) return alert("Informe o número.");
+  
+    const user = auth.currentUser;
+    if (!user) return alert("Usuário não autenticado.");
+  
+    const token = await user.getIdToken(); // ✅ PEGA O TOKEN
+  
+    const res = await fetch(`${API_URL}/unlink-phone`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}` // ✅ ENVIA O TOKEN AQUI
+      },
+      body: JSON.stringify({ phone }),
+    });
+  
+    const result = await res.json();
+    if (res.ok) {
+      alert("📴 Número desvinculado com sucesso.");
+      setSessionAuthorized(false);
+      setSessionStatus("none");
+    } else {
+      alert(result.detail || "Erro ao desvincular.");
+    }
+  }}
+  
     className="bg-red-500 px-4 py-2 rounded text-white font-bold"
   >
     🔓 Desvincular Número
