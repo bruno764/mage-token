@@ -1,7 +1,7 @@
 // 🔧 Home.jsx
 import React, { useEffect, useState, useRef } from "react";
 import { auth, db } from "../firebase/firebase";
-import { doc, getDoc, setDoc } from "firebase/firestore";
+import { doc, getDoc, setDoc, collection, getDocs,addDoc, deleteDoc, serverTimestamp  } from "firebase/firestore";
 import { useNavigate } from "react-router-dom";
 import { onAuthStateChanged } from "firebase/auth";
 
