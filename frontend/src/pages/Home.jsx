@@ -112,9 +112,14 @@ export default function Home() {
     if (!phone) return alert("Informe o número.");
   
     try {
+      const token = await auth.currentUser.getIdToken(); // 🔐 Pega o token do Firebase
+  
       const res = await fetch(`${API_URL}/check-session`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
         body: JSON.stringify({ phone }),
       });
   
@@ -132,6 +137,7 @@ export default function Home() {
       alert("Erro ao verificar sessão.");
     }
   };
+  
   
 
   const handleListContacts = async () => {
@@ -241,12 +247,19 @@ export default function Home() {
   const handleEnviarCodigo = async () => {
     const phone = telegramTokenRef.current.value;
     if (!phone) return alert("Digite o número de telefone.");
+  
     try {
+      const token = await auth.currentUser.getIdToken(); // 🔐 Pega o token do Firebase
+  
       const res = await fetch(`${API_URL}/start-login`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
         body: JSON.stringify({ phone }),
       });
+  
       const result = await res.json();
       if (res.ok) {
         if (result.phone_code_hash) setCodeHash(result.phone_code_hash);
@@ -258,6 +271,7 @@ export default function Home() {
       alert(`Erro ao enviar requisição: ${error.message}`);
     }
   };
+  
 
   const renderTabContent = () => {
     if (activeTab !== "telegram") {
