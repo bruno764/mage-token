@@ -234,28 +234,32 @@ export default function Home() {
         .split("\n")
         .map((n) => n.trim())
         .filter(Boolean) || [];
-
+  
     if (!message || !phone) {
       return alert("⚠️ Número, mensagem e contatos obrigatórios.");
     }
+  
     const allRecipients = [...selectedContacts, ...manualNumbers].filter(Boolean);
     if (allRecipients.length === 0) {
       return alert("⚠️ Nenhum destinatário válido encontrado.");
     }
-
+  
+    const token = await auth.currentUser.getIdToken(); // 🔐
+  
     const formData = new FormData();
     formData.append("phone", phone);
     formData.append("message", message);
     formData.append("recipients", allRecipients.join(","));
     if (file) formData.append("file", file);
-
+  
     const res = await fetch(`${API_URL}/send-broadcast`, {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${token}` // 🔐 ADICIONE ISSO
+        Authorization: `Bearer ${token}` // 🔐
       },
       body: formData,
     });
+  
     const result = await res.json();
     alert(result.status || result.error);
   };
@@ -282,6 +286,7 @@ export default function Home() {
   
     // ✅ Converte para UTC
     const utcScheduledAt = new Date(scheduledAt).toISOString();
+    const token = await auth.currentUser.getIdToken();
   
     const formData = new FormData();
     formData.append("phone", phone);
