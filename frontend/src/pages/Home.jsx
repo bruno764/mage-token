@@ -355,7 +355,11 @@ export default function Home() {
       const res = await fetch(`${API_URL}/unlink-phone`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ phone, uid: auth.currentUser?.uid }),
+        body: JSON.stringify({ phone }),
+headers: {
+  "Content-Type": "application/json",
+  Authorization: `Bearer ${await auth.currentUser.getIdToken()}`,
+},
       });
       const result = await res.json();
       if (res.ok) {

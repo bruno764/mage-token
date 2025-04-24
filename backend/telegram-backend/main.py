@@ -27,10 +27,10 @@ import traceback
 
 from supabase import create_client
 import firebase_admin
-from firebase_admin import credentials, firestore
+from firebase_admin import credentials, firestore, auth as firebase_auth
 
 from dotenv import load_dotenv
-from fastapi import Query
+from fastapi import Query, Request, Depends
 
 # ─── CARREGA VARIÁVEIS DE AMBIENTE ────────────────────────────────────────────
 load_dotenv()
@@ -88,7 +88,19 @@ class VerifyCode(BaseModel):
     code: str
     phone_code_hash: str
 
-# ─── FUNÇÃO AUXILIAR DE BROADCAST ─────────────────────────────────────────────
+# ✅ FORA DA CLASSE:
+async def get_current_user(request: Request):
+    auth_header = request.headers.get("Authorization")
+    if not auth_header or not auth_header.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Token ausente")
+    token = auth_header.split("Bearer ")[1]
+    try:
+        decoded = firebase_auth.verify_id_token(token)
+        return decoded["uid"]
+    except Exception:
+        raise HTTPException(status_code=401, detail="Token inválido")
+
+# ─── FUNÇÃO AUXILIAR DE BROADCAST  ─────────────────────────────────────────────
 async def perform_broadcast(
     phone: str,
     message: str,
@@ -286,12 +298,11 @@ async def check_session(data: PhoneNumber):
     return {"authorized": authorized}
 
 @app.post("/unlink-phone")
-async def unlink_phone(data: dict):
+async def unlink_phone(data: dict, current_uid: str = Depends(get_current_user)):
     phone = data.get("phone")
-    uid = data.get("uid")
 
     doc = firestore_db.collection("phone_ownership").document(phone).get()
-    if doc.exists and doc.to_dict().get("uid") == uid:
+    if doc.exists and doc.to_dict().get("uid") == current_uid:
         firestore_db.collection("phone_ownership").document(phone).delete()
         return {"status": "Número desvinculado"}
     else:
