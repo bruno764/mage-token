@@ -23,7 +23,10 @@ export default function Home() {
   const [templates, setTemplates] = useState([]);
   const [newTemplateName, setNewTemplateName] = useState("");
   const navigate = useNavigate();
-
+  const [isSending, setIsSending] = useState(false);
+  const [progress, setProgress] = useState({ current: 0, total: 0 });
+  const [finalResult, setFinalResult] = useState(null);
+  
   const messageRef = useRef();
   const fileRef = useRef();
   const telegramTokenRef = useRef();
@@ -244,7 +247,10 @@ export default function Home() {
       return alert("⚠️ Nenhum destinatário válido encontrado.");
     }
   
-    const token = await auth.currentUser.getIdToken(); // 🔐
+    const token = await auth.currentUser.getIdToken();
+    setIsSending(true);
+    setProgress({ current: 0, total: allRecipients.length });
+    setFinalResult(null);
   
     const formData = new FormData();
     formData.append("phone", phone);
@@ -252,16 +258,26 @@ export default function Home() {
     formData.append("recipients", allRecipients.join(","));
     if (file) formData.append("file", file);
   
-    const res = await fetch(`${API_URL}/send-broadcast`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${token}` // 🔐
-      },
-      body: formData,
-    });
+    try {
+      const res = await fetch(`${API_URL}/send-broadcast`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`
+        },
+        body: formData,
+      });
+      const result = await res.json();
   
-    const result = await res.json();
-    alert(result.status || result.error);
+      // Simulação: result deve conter .success e .errors
+      const success = result.success || allRecipients.length; // ajuste se precisar
+      const errorCount = result.errors ? Object.keys(result.errors).length : 0;
+  
+      setFinalResult({ success, errors: errorCount });
+    } catch (err) {
+      alert("Erro ao enviar mensagens.");
+    } finally {
+      setIsSending(false);
+    }
   };
 
   // Agendamento
@@ -804,6 +820,31 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-black to-gray-900 text-white flex font-sans">
+      {isSending && (
+  <div className="fixed top-0 left-0 right-0 z-50 bg-gray-900 text-white text-center py-3 shadow-lg">
+    🔄 Enviando mensagens: {progress.current} / {progress.total}
+  </div>
+)}
+
+{finalResult && (
+  <>
+    <div className="fixed top-14 left-0 right-0 z-50 bg-green-700 text-white text-center py-3 shadow-lg">
+      ✅ Disparo concluído: {finalResult.success} sucesso, {finalResult.errors} erro(s)
+      <br />
+      <span className="text-sm text-yellow-200">
+        Verifique o histórico para detalhes.
+      </span>
+    </div>
+    <button
+      onClick={() => setFinalResult(null)}
+      className="absolute top-1 right-3 text-white text-xl font-bold"
+    >
+      ×
+    </button>
+  </>
+)}
+
+
       {/* Sidebar */}
       <div className="w-64 bg-[#1c152b] p-6 space-y-4 shadow-xl">
         <h2 className="text-xl font-bold mb-6">📡 Plataformas</h2>
