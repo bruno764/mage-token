@@ -32,23 +32,36 @@ export default function Home() {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (!user) {
-        navigate("/auth")
+        navigate("/auth");
         return;
       }
+  
       try {
+        const tokenResult = await user.getIdTokenResult(true);
+        const isExpired = Date.now() > tokenResult.expirationTime;
+  
+        if (isExpired) {
+          await auth.signOut();
+          navigate("/auth");
+          return;
+        }
+  
         const userRef = doc(db, "users", user.uid);
         const docSnap = await getDoc(userRef);
         if (docSnap.exists()) {
           setUserData(docSnap.data());
         }
       } catch (err) {
-        console.error("Erro ao buscar dados:", err);
+        console.error("Erro ao verificar token:", err);
+        navigate("/auth");
       } finally {
         setLoading(false);
       }
     });
+  
     return () => unsubscribe();
   }, [navigate]);
+  
   useEffect(() => {
     const fetchBroadcastHistory = async () => {
       try {
