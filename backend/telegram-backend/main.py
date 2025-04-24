@@ -100,6 +100,14 @@ async def get_current_user(request: Request):
     except Exception:
         raise HTTPException(status_code=401, detail="Token inválido")
 
+def check_phone_permission(phone: str, current_uid: str):
+    doc = firestore_db.collection("phone_ownership").document(phone).get()
+    if doc.exists:
+        owner_uid = doc.to_dict().get("uid")
+        if owner_uid != current_uid:
+            raise HTTPException(status_code=403, detail="Você não tem permissão para usar esse número.")
+
+
 # ─── FUNÇÃO AUXILIAR DE BROADCAST  ─────────────────────────────────────────────
 async def perform_broadcast(
     phone: str,
@@ -340,7 +348,9 @@ async def unlink_phone(data: dict, current_uid: str = Depends(get_current_user))
         raise HTTPException(status_code=403, detail="Você não tem permissão para desvincular esse número.")
 
 @app.post("/list-contacts")
-async def list_contacts(data: PhoneNumber):
+async def list_contacts(data: PhoneNumber, current_uid: str = Depends(get_current_user)):
+    check_phone_permission(data.phone, current_uid)
+
     restore_session_if_needed(data.phone)
     client = TelegramClient(f"{SESSION_DIR}/{data.phone}", API_ID, API_HASH)
     await client.connect()
@@ -358,12 +368,15 @@ async def list_contacts(data: PhoneNumber):
     ]}
 
 @app.post("/list-dialogs")
-async def list_dialogs(data: PhoneNumber):
+async def list_dialogs(data: PhoneNumber, current_uid: str = Depends(get_current_user)):
+    check_phone_permission(data.phone, current_uid)
+
     restore_session_if_needed(data.phone)
     client = TelegramClient(f"{SESSION_DIR}/{data.phone}", API_ID, API_HASH)
     await client.connect()
     dialogs = await client.get_dialogs()
     await client.disconnect()
+
     resultado = []
     for dlg in dialogs:
         ent = dlg.entity
@@ -383,13 +396,17 @@ async def list_dialogs(data: PhoneNumber):
             })
     return {"dialogs": resultado}
 
+
 @app.post("/send-broadcast")
 async def send_broadcast(
     phone: str = Form(...),
     message: str = Form(...),
     recipients: str = Form(...),
-    file: UploadFile = File(None)
+    file: UploadFile = File(None),
+    current_uid: str = Depends(get_current_user)  # 🔐 adiciona proteção
 ):
+    check_phone_permission(phone, current_uid)  # 🔒 só UID dono pode usar
+
     file_key = None
     if file:
         raw = await file.read()
@@ -405,8 +422,11 @@ async def schedule_broadcast(
     message: str = Form(...),
     recipients: str = Form(...),
     send_at: datetime = Form(...),
-    file: UploadFile = File(None)
+    file: UploadFile = File(None),
+    current_uid: str = Depends(get_current_user)
 ):
+    check_phone_permission(phone, current_uid)
+
     if send_at <= datetime.now(timezone.utc):
         raise HTTPException(status_code=400, detail="send_at deve ser no futuro")
 
@@ -443,8 +463,11 @@ async def schedule_broadcast(
         "file_key": file_key
     }
 
+
 @app.get("/broadcast-history")
-async def broadcast_history(phone: str, limit: int = Query(default=100, lte=100)):
+async def broadcast_history(phone: str, limit: int = Query(default=100, lte=100), current_uid: str = Depends(get_current_user)):
+    check_phone_permission(phone, current_uid)
+
     try:
         docs_ref = (
             firestore_db.collection("scheduled_broadcasts")
@@ -461,15 +484,14 @@ async def broadcast_history(phone: str, limit: int = Query(default=100, lte=100)
             if isinstance(send_at, datetime) or hasattr(send_at, "timestamp"):
                 valid_docs.append((send_at, data))
 
-        # Ordena manualmente os documentos por `send_at` desc
         valid_docs.sort(key=lambda x: x[0], reverse=True)
 
         return {"items": [data for _, data in valid_docs]}
 
     except Exception as e:
-        import traceback
         traceback.print_exc()
         return JSONResponse(
             status_code=500,
             content={"detail": f"Erro ao buscar histórico: {str(e)}"},
         )
+
