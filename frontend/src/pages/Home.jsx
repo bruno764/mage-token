@@ -857,7 +857,6 @@ export default function Home() {
 
         <div className="bg-[#1a1a2e] p-6 rounded-xl shadow-md min-h-[300px]">
           <h2 className="text-xl font-bold mb-4">🔧 Área de Controle</h2>
-          {renderTooltipBlocked()}
         </div>
       </div>
     </div>
