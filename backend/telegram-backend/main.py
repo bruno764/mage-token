@@ -14,6 +14,8 @@ from pydantic import BaseModel
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.date import DateTrigger
 from fastapi.responses import JSONResponse
+from apscheduler.triggers.cron import CronTrigger
+from fastapi import Body
 
 
 from telethon.sync import TelegramClient
@@ -173,6 +175,29 @@ async def perform_broadcast(
 
     if local_file and os.path.exists(local_file):
         os.remove(local_file)
+        
+# 🔁 Agendamentos recorrentes
+try:
+    recurring_jobs = firestore_db.collection("recurring_broadcasts").where("active", "==", True).stream()
+    for doc in recurring_jobs:
+        rec = doc.to_dict()
+        job_id = f"recurring-{doc.id}"
+        scheduler.add_job(
+            perform_broadcast,
+            trigger=CronTrigger.from_crontab(rec["cron"]),
+            args=[
+                rec["phone"],
+                rec["message"],
+                rec["recipients"],
+                rec.get("file_key"),
+                None  # job_id=None pois é recorrente
+            ],
+            id=job_id,
+            replace_existing=True
+        )
+    print("✅ Recorrentes carregados")
+except Exception as e:
+    print(f"⚠️ Erro ao carregar recorrentes: {e}")
 
 
 
@@ -473,6 +498,48 @@ async def schedule_broadcast(
         "file_key": file_key
     }
 
+@app.post("/schedule-recurring")
+async def schedule_recurring(
+    phone: str = Form(...),
+    message: str = Form(...),
+    recipients: str = Form(...),
+    cron: str = Form(...),  # exemplo: "0 7 * * *"
+    file: UploadFile = File(None),
+    current_uid: str = Depends(get_current_user)
+):
+    check_phone_permission(phone, current_uid)
+
+    file_key = None
+    if file:
+        raw = await file.read()
+        file_key = f"recurring/{uuid4().hex}_{file.filename}"
+        supabase.storage.from_(BUCKET).upload(file_key, raw)
+
+    job_id = uuid4().hex
+    firestore_db.collection("recurring_broadcasts").document(job_id).set({
+        "uid":        current_uid,
+        "phone":      phone,
+        "message":    message,
+        "recipients": recipients,
+        "cron":       cron,
+        "file_key":   file_key,
+        "active":     True,
+        "created_at": datetime.utcnow()
+    })
+
+    scheduler.add_job(
+        perform_broadcast,
+        trigger=CronTrigger.from_crontab(cron),
+        args=[phone, message, recipients, file_key, job_id],
+        id=job_id,
+        replace_existing=True
+    )
+
+    return {
+        "status": "Agendamento recorrente criado",
+        "cron": cron,
+        "job_id": job_id
+    }
 
 @app.get("/broadcast-history")
 async def broadcast_history(phone: str, limit: int = Query(default=100, lte=100), current_uid: str = Depends(get_current_user)):

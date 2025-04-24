@@ -26,12 +26,14 @@ export default function Home() {
   const [isSending, setIsSending] = useState(false);
   const [progress, setProgress] = useState({ current: 0, total: 0 });
   const [finalResult, setFinalResult] = useState(null);
+  const [currentPage, setCurrentPage] = useState(0);
   
   const messageRef = useRef();
   const fileRef = useRef();
   const telegramTokenRef = useRef();
   const manualNumbersRef = useRef();
 
+  
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (!user) {
@@ -64,6 +66,14 @@ export default function Home() {
 
     return () => unsubscribe();
   }, [navigate]);
+
+  const itemsPerPage = 8;
+
+const paginated = broadcastHistory.slice(
+  currentPage * itemsPerPage,
+  (currentPage + 1) * itemsPerPage
+);
+const totalPages = Math.ceil(broadcastHistory.length / itemsPerPage);
 
   useEffect(() => {
     const fetchBroadcastHistory = async () => {
@@ -516,9 +526,7 @@ export default function Home() {
   {broadcastHistory.length > 0 && (
   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mt-6">
     <h4 className="text-xl font-bold col-span-full">📜 Histórico de Envios</h4>
-    {broadcastHistory
-      .slice(0, 8) // Mostra apenas os 8 mais recentes
-      .map((item, i) => {
+    {paginated.map((item, i) => {
         const total = (item.recipients || "").split(",").filter(Boolean).length;
         const errorCount = item.errors ? Object.keys(item.errors).length : 0;
         const successCount = total - errorCount;
@@ -526,11 +534,31 @@ export default function Home() {
         return (
           <div key={i} className="rounded-lg shadow-md bg-[#1f1f2e] border border-gray-700 p-4">
             <div className="flex justify-between items-center mb-2">
-              <h5 className="text-white font-bold">📨 Disparo {i + 1}</h5>
-              <span className={`text-sm px-2 py-1 rounded ${item.status === "sent" ? "bg-green-700 text-white" : "bg-yellow-700 text-white"}`}>
+            <h5 className="text-white font-bold">📨 Disparo {(currentPage * itemsPerPage) + i + 1}</h5>
+            <span className={`text-sm px-2 py-1 rounded ${item.status === "sent" ? "bg-green-700 text-white" : "bg-yellow-700 text-white"}`}>
                 {item.status === "sent" ? "✅ Enviado" : "⏳ Pendente"}
               </span>
             </div>
+            <div className="flex justify-between items-center mt-4">
+  <button
+    disabled={currentPage === 0}
+    onClick={() => setCurrentPage(p => p - 1)}
+    className="bg-gray-700 px-4 py-1 rounded text-white disabled:opacity-40"
+  >
+    ◀ Anterior
+  </button>
+  <span className="text-white">
+    Página {currentPage + 1} de {totalPages}
+  </span>
+  <button
+    disabled={currentPage >= totalPages - 1}
+    onClick={() => setCurrentPage(p => p + 1)}
+    className="bg-gray-700 px-4 py-1 rounded text-white disabled:opacity-40"
+  >
+    Próxima ▶
+  </button>
+</div>
+
             <div className="text-sm text-gray-300">
   <strong>Mensagem:</strong>{" "}
   <div className="relative">
