@@ -19,6 +19,10 @@ export default function Home() {
   const [codeHash, setCodeHash] = useState("");
   const [broadcastHistory, setBroadcastHistory] = useState([]);
   const navigate = useNavigate();
+  // 🔥 Templates de mensagem (Firestore)
+  const [templates, setTemplates] = useState([]);
+  const [newTemplateName, setNewTemplateName] = useState("");
+
 
   const messageRef = useRef();
   const fileRef = useRef();
@@ -63,8 +67,22 @@ export default function Home() {
     if (activeTab === "telegram" && telegramTokenRef.current?.value) {
       fetchBroadcastHistory();
     }    
+
+    
   }, [activeTab]);
   
+  useEffect(() => {
+    const fetchTemplates = async () => {
+      const user = auth.currentUser;
+      if (!user) return;
+  
+      const ref = collection(db, "users", user.uid, "templates");
+      const snap = await getDocs(ref);
+      const items = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setTemplates(items);
+    };
+    fetchTemplates();
+  }, []);
   
 
   const handleUpgrade = async () => {
@@ -552,42 +570,72 @@ export default function Home() {
   className="w-full p-3 bg-gray-800 rounded text-white"
 />
 
-{/* Templates de Mensagem */}
+{/* Templates de Mensagem */ }
 <div className="space-y-2">
   <h4 className="font-semibold">📂 Templates de Mensagem</h4>
+
   <select
     onChange={(e) => {
-      if (e.target.value) {
-        messageRef.current.value = e.target.value;
-      }
+      const tpl = templates.find(t => t.id === e.target.value);
+      if (tpl) messageRef.current.value = tpl.message;
     }}
     className="w-full p-2 rounded bg-gray-800 text-white"
   >
     <option value="">-- Selecione um Template --</option>
-    {(JSON.parse(localStorage.getItem("templates") || "[]")).map((tpl, i) => (
-      <option key={i} value={tpl}>{tpl.substring(0, 50)}...</option>
+    {templates.map(tpl => (
+      <option key={tpl.id} value={tpl.id}>
+        {tpl.name}
+      </option>
     ))}
   </select>
 
+  <input
+    value={newTemplateName}
+    onChange={(e) => setNewTemplateName(e.target.value)}
+    placeholder="Nome do Template"
+    className="w-full p-2 rounded bg-gray-800 text-white"
+  />
+
   <div className="flex gap-2">
     <button
-      onClick={() => {
-        const text = messageRef.current.value.trim();
-        if (!text) return alert("⚠️ Mensagem vazia");
-        const current = JSON.parse(localStorage.getItem("templates") || "[]");
-        localStorage.setItem("templates", JSON.stringify([...current, text]));
+      onClick={async () => {
+        const user = auth.currentUser;
+        const name = newTemplateName.trim();
+        const message = messageRef.current.value.trim();
+        if (!user || !name || !message) {
+          return alert("⚠️ Nome e mensagem obrigatórios.");
+        }
+
+        const ref = collection(db, "users", user.uid, "templates");
+        await addDoc(ref, {
+          name,
+          message,
+          created_at: serverTimestamp(),
+        });
+
+        const snap = await getDocs(ref);
+        setTemplates(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+        setNewTemplateName("");
         alert("✅ Template salvo!");
       }}
       className="bg-blue-700 px-4 py-1 rounded text-white text-sm font-bold"
     >
-      💾 Salvar Template Atual
+      💾 Salvar Template
     </button>
+
     <button
-      onClick={() => {
-        if (confirm("Tem certeza que deseja apagar todos os templates?")) {
-          localStorage.removeItem("templates");
-          alert("🗑️ Templates apagados");
+      onClick={async () => {
+        const user = auth.currentUser;
+        if (!user) return;
+        if (!confirm("Apagar todos os templates?")) return;
+
+        const ref = collection(db, "users", user.uid, "templates");
+        const snap = await getDocs(ref);
+        for (const docSnap of snap.docs) {
+          await deleteDoc(doc(db, "users", user.uid, "templates", docSnap.id));
         }
+        setTemplates([]);
+        alert("🗑️ Templates apagados");
       }}
       className="bg-red-700 px-4 py-1 rounded text-white text-sm font-bold"
     >
