@@ -308,6 +308,7 @@ export default function Home() {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ phone, code, phone_code_hash: codeHash }),
+              uid: user?.uid,
             });
             const result = await res.json();
             if (result.status) {
@@ -345,6 +346,32 @@ export default function Home() {
       <span className="text-gray-400 font-bold">⚪️ Desconhecida</span>
     )}
   </div>
+
+  {sessionStatus === "active" && (
+  <button
+    onClick={async () => {
+      const phone = telegramTokenRef.current.value;
+      if (!phone) return alert("Informe o número.");
+
+      const res = await fetch(`${API_URL}/unlink-phone`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone, uid: auth.currentUser?.uid }),
+      });
+      const result = await res.json();
+      if (res.ok) {
+        alert("📴 Número desvinculado com sucesso.");
+        setSessionAuthorized(false);
+        setSessionStatus("none");
+      } else {
+        alert(result.detail || "Erro ao desvincular.");
+      }
+    }}
+    className="bg-red-500 px-4 py-2 rounded text-white font-bold"
+  >
+    🔓 Desvincular Número
+  </button>
+)}
 
   <button
     onClick={handleListContacts}

@@ -231,27 +231,49 @@ async def start_login(data: PhoneNumber):
     }
 
 @app.post("/verify-code")
-async def verify_code(data: VerifyCode):
-    restore_session_if_needed(data.phone)
-    session_path = f"{SESSION_DIR}/{data.phone}"
+async def verify_code(data: dict):
+    phone = data.get("phone")
+    code = data.get("code")
+    phone_code_hash = data.get("phone_code_hash")
+    uid = data.get("uid")
+
+    if not uid:
+        raise HTTPException(status_code=400, detail="UID do usuário não informado.")
+
+    # 🚫 Verifica se o número já está vinculado a outro UID
+    owner_doc = firestore_db.collection("phone_ownership").document(phone).get()
+    if owner_doc.exists:
+        if owner_doc.to_dict().get("uid") != uid:
+            raise HTTPException(status_code=403, detail="Este número está vinculado a outra conta.")
+
+    restore_session_if_needed(phone)
+    session_path = f"{SESSION_DIR}/{phone}"
     client = TelegramClient(session_path, API_ID, API_HASH)
     await client.connect()
+
     await client.sign_in(
-        phone=data.phone,
-        code=data.code,
-        phone_code_hash=data.phone_code_hash
+        phone=phone,
+        code=code,
+        phone_code_hash=phone_code_hash
     )
 
     # 🔐 Salva sessão no Firestore
     with open(session_path + ".session", "rb") as f:
         encoded = base64.b64encode(f.read()).decode("utf-8")
-        firestore_db.collection("telegram_sessions").document(data.phone).set({
+        firestore_db.collection("telegram_sessions").document(phone).set({
             "session_data": encoded,
             "updated_at": datetime.utcnow()
         })
 
+    # 📌 Salva o vínculo do número com o UID
+    firestore_db.collection("phone_ownership").document(phone).set({
+        "uid": uid,
+        "linked_at": datetime.utcnow()
+    })
+
     await client.disconnect()
     return {"status": "Login concluído e sessão salva com sucesso ✅"}
+
 
 
 @app.post("/check-session")
@@ -262,6 +284,18 @@ async def check_session(data: PhoneNumber):
     authorized = await client.is_user_authorized()
     await client.disconnect()
     return {"authorized": authorized}
+
+@app.post("/unlink-phone")
+async def unlink_phone(data: dict):
+    phone = data.get("phone")
+    uid = data.get("uid")
+
+    doc = firestore_db.collection("phone_ownership").document(phone).get()
+    if doc.exists and doc.to_dict().get("uid") == uid:
+        firestore_db.collection("phone_ownership").document(phone).delete()
+        return {"status": "Número desvinculado"}
+    else:
+        raise HTTPException(status_code=403, detail="Você não tem permissão para desvincular esse número.")
 
 @app.post("/list-contacts")
 async def list_contacts(data: PhoneNumber):
