@@ -524,9 +524,11 @@ const totalPages = Math.ceil(broadcastHistory.length / itemsPerPage);
   </button>
   
   {broadcastHistory.length > 0 && (
-  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mt-6">
-    <h4 className="text-xl font-bold col-span-full">📜 Histórico de Envios</h4>
-    {paginated.map((item, i) => {
+  <div className="mt-6">
+    <h4 className="text-xl font-bold mb-4">📜 Histórico de Envios</h4>
+    
+    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+      {paginated.map((item, i) => {
         const total = (item.recipients || "").split(",").filter(Boolean).length;
         const errorCount = item.errors ? Object.keys(item.errors).length : 0;
         const successCount = total - errorCount;
@@ -534,55 +536,33 @@ const totalPages = Math.ceil(broadcastHistory.length / itemsPerPage);
         return (
           <div key={i} className="rounded-lg shadow-md bg-[#1f1f2e] border border-gray-700 p-4">
             <div className="flex justify-between items-center mb-2">
-            <h5 className="text-white font-bold">📨 Disparo {(currentPage * itemsPerPage) + i + 1}</h5>
-            <span className={`text-sm px-2 py-1 rounded ${item.status === "sent" ? "bg-green-700 text-white" : "bg-yellow-700 text-white"}`}>
+              <h5 className="text-white font-bold">📨 Disparo {(currentPage * itemsPerPage) + i + 1}</h5>
+              <span className={`text-sm px-2 py-1 rounded ${item.status === "sent" ? "bg-green-700 text-white" : "bg-yellow-700 text-white"}`}>
                 {item.status === "sent" ? "✅ Enviado" : "⏳ Pendente"}
               </span>
             </div>
-            <div className="flex justify-between items-center mt-4">
-  <button
-    disabled={currentPage === 0}
-    onClick={() => setCurrentPage(p => p - 1)}
-    className="bg-gray-700 px-4 py-1 rounded text-white disabled:opacity-40"
-  >
-    ◀ Anterior
-  </button>
-  <span className="text-white">
-    Página {currentPage + 1} de {totalPages}
-  </span>
-  <button
-    disabled={currentPage >= totalPages - 1}
-    onClick={() => setCurrentPage(p => p + 1)}
-    className="bg-gray-700 px-4 py-1 rounded text-white disabled:opacity-40"
-  >
-    Próxima ▶
-  </button>
-</div>
 
             <div className="text-sm text-gray-300">
-  <strong>Mensagem:</strong>{" "}
-  <div className="relative">
-    <p
-      className={`whitespace-pre-line ${
-        item.showFull ? "" : "line-clamp-3"
-      } transition-all duration-300`}
-    >
-      {item.message}
-    </p>
-    {item.message.length > 150 && (
-      <button
-        className="text-blue-400 text-xs mt-1 underline"
-        onClick={() => {
-          const updated = [...broadcastHistory];
-          updated[i].showFull = !updated[i].showFull;
-          setBroadcastHistory(updated);
-        }}
-      >
-        {item.showFull ? "Mostrar menos" : "Mostrar mais"}
-      </button>
-    )}
-  </div>
-</div>
+              <strong>Mensagem:</strong>{" "}
+              <div className="relative">
+                <p className={`whitespace-pre-line ${item.showFull ? "" : "line-clamp-3"} transition-all duration-300`}>
+                  {item.message}
+                </p>
+                {item.message.length > 150 && (
+                  <button
+                    className="text-blue-400 text-xs mt-1 underline"
+                    onClick={() => {
+                      const updated = [...broadcastHistory];
+                      updated[(currentPage * itemsPerPage) + i].showFull = !item.showFull;
+                      setBroadcastHistory(updated);
+                    }}
+                  >
+                    {item.showFull ? "Mostrar menos" : "Mostrar mais"}
+                  </button>
+                )}
+              </div>
+            </div>
+
             <p className="text-sm text-gray-400">
               <strong>Agendado para:</strong>{" "}
               {item.send_at?._seconds
@@ -607,8 +587,31 @@ const totalPages = Math.ceil(broadcastHistory.length / itemsPerPage);
           </div>
         );
       })}
+    </div>
+
+    {/* Navegação entre páginas fora do map */}
+    <div className="flex justify-center items-center gap-4 mt-6">
+      <button
+        disabled={currentPage === 0}
+        onClick={() => setCurrentPage(p => p - 1)}
+        className="bg-gray-700 px-4 py-2 rounded text-white disabled:opacity-40"
+      >
+        ◀ Anterior
+      </button>
+      <span className="text-white font-semibold">
+        Página {currentPage + 1} de {totalPages}
+      </span>
+      <button
+        disabled={currentPage >= totalPages - 1}
+        onClick={() => setCurrentPage(p => p + 1)}
+        className="bg-gray-700 px-4 py-2 rounded text-white disabled:opacity-40"
+      >
+        Próxima ▶
+      </button>
+    </div>
   </div>
 )}
+
 
 
 
