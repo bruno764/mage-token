@@ -1,7 +1,7 @@
 // 🔧 Home.jsx
 import React, { useEffect, useState, useRef } from "react";
 import { auth, db } from "../firebase/firebase";
-import { doc, getDoc, setDoc, collection, getDocs,addDoc, deleteDoc, serverTimestamp  } from "firebase/firestore";
+import { doc, getDoc, setDoc, collection, getDocs, addDoc, deleteDoc, serverTimestamp } from "firebase/firestore";
 import { useNavigate } from "react-router-dom";
 import { onAuthStateChanged } from "firebase/auth";
 
@@ -15,14 +15,14 @@ export default function Home() {
   const [contacts, setContacts] = useState({ users: [], groups: [] });
   const [selectedContacts, setSelectedContacts] = useState([]);
   const [sessionAuthorized, setSessionAuthorized] = useState(false);
-  const [sessionStatus, setSessionStatus] = useState("none"); // 'none' | 'active' | 'inactive'
+  const [sessionStatus, setSessionStatus] = useState("none");
   const [codeHash, setCodeHash] = useState("");
   const [broadcastHistory, setBroadcastHistory] = useState([]);
-  const navigate = useNavigate();
-  // 🔥 Templates de mensagem (Firestore)
+  const [tooltipBlocked, setTooltipBlocked] = useState(false);
+  const [successLinkMessage, setSuccessLinkMessage] = useState(false);
   const [templates, setTemplates] = useState([]);
   const [newTemplateName, setNewTemplateName] = useState("");
-
+  const navigate = useNavigate();
 
   const messageRef = useRef();
   const fileRef = useRef();
@@ -35,17 +35,17 @@ export default function Home() {
         navigate("/auth");
         return;
       }
-  
+
       try {
         const tokenResult = await user.getIdTokenResult(true);
         const isExpired = Date.now() > tokenResult.expirationTime;
-  
+
         if (isExpired) {
           await auth.signOut();
           navigate("/auth");
           return;
         }
-  
+
         const userRef = doc(db, "users", user.uid);
         const docSnap = await getDoc(userRef);
         if (docSnap.exists()) {
@@ -58,10 +58,10 @@ export default function Home() {
         setLoading(false);
       }
     });
-  
+
     return () => unsubscribe();
   }, [navigate]);
-  
+
   useEffect(() => {
     const fetchBroadcastHistory = async () => {
       try {
@@ -69,26 +69,22 @@ export default function Home() {
         if (!phone) return;
         const res = await fetch(`${API_URL}/broadcast-history?phone=${phone}`);
         const json = await res.json();
-        console.log("Histórico recebido:", json.items);
         setBroadcastHistory(json.items || []);
       } catch (err) {
         console.error("Erro ao buscar histórico:", err);
         alert("Erro ao buscar histórico de envios.");
       }
     };
-  
+
     if (activeTab === "telegram" && telegramTokenRef.current?.value) {
       fetchBroadcastHistory();
-    }    
-
-    
+    }
   }, [activeTab]);
-  
+
   useEffect(() => {
     const fetchTemplates = async () => {
       const user = auth.currentUser;
       if (!user) return;
-  
       const ref = collection(db, "users", user.uid, "templates");
       const snap = await getDocs(ref);
       const items = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
@@ -96,7 +92,6 @@ export default function Home() {
     };
     fetchTemplates();
   }, []);
-  
 
   const handleUpgrade = async () => {
     const user = auth.currentUser;
@@ -123,10 +118,9 @@ export default function Home() {
   const handleCheckSession = async () => {
     const phone = telegramTokenRef.current.value;
     if (!phone) return alert("Informe o número.");
-  
+
     try {
-      const token = await auth.currentUser.getIdToken(); // 🔐 Pega o token do Firebase
-  
+      const token = await auth.currentUser.getIdToken();
       const res = await fetch(`${API_URL}/check-session`, {
         method: "POST",
         headers: {
@@ -135,8 +129,14 @@ export default function Home() {
         },
         body: JSON.stringify({ phone }),
       });
-  
+
       const result = await res.json();
+      if (result.detail === "Este número está vinculado a outra conta.") {
+        setTooltipBlocked(true);
+        setSessionStatus("none");
+        return;
+      }
+
       if (result.authorized) {
         setSessionStatus("active");
         alert("✅ Sessão ATIVA");
@@ -150,6 +150,25 @@ export default function Home() {
       alert("Erro ao verificar sessão.");
     }
   };
+
+  const renderTooltipBlocked = () => {
+    if (!tooltipBlocked) return null;
+    return (
+      <div className="text-red-500 text-sm font-semibold">
+        🚫 Este número está vinculado a outra conta. Você não pode usá-lo aqui.
+      </div>
+    );
+  };
+
+  const renderSuccessLinkMessage = () => {
+    if (!successLinkMessage) return null;
+    return (
+      <div className="text-green-400 text-sm font-semibold mb-2">
+        ✅ Número vinculado com sucesso à sua conta!
+      </div>
+    );
+  };
+
   
   
 
@@ -832,7 +851,15 @@ export default function Home() {
 
         <div className="bg-[#1a1a2e] p-6 rounded-xl shadow-md min-h-[300px]">
           <h2 className="text-xl font-bold mb-4">🔧 Área de Controle</h2>
-          {renderTabContent()}
+          {renderTooltipBlocked()}
+{renderSuccessLinkMessage()}
+
+<input
+  placeholder="Seu número de telefone (+55...)"
+  ref={telegramTokenRef}
+  className="w-full p-3 rounded bg-gray-800 text-white placeholder-gray-400"
+/>
+
         </div>
       </div>
     </div>
