@@ -139,6 +139,7 @@ export default function Home() {
 
       if (result.authorized) {
         setSessionStatus("active");
+        setSessionAuthorized(true);
         alert("✅ Sessão ATIVA");
       } else {
         setSessionStatus("inactive");
@@ -250,6 +251,9 @@ export default function Home() {
 
     const res = await fetch(`${API_URL}/send-broadcast`, {
       method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}` // 🔐 ADICIONE ISSO
+      },
       body: formData,
     });
     const result = await res.json();
@@ -288,6 +292,9 @@ export default function Home() {
   
     const res = await fetch(`${API_URL}/schedule-broadcast`, {
       method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}` // 🔐 ADICIONE ISSO
+      },
       body: formData,
     });
     const result = await res.json();
@@ -466,10 +473,15 @@ export default function Home() {
   </button>
 
   <button
-    onClick={() => {
-      const phone = telegramTokenRef.current?.value;
-      if (phone) {
-        fetch(`${API_URL}/broadcast-history?phone=${encodeURIComponent(phone)}`)
+  onClick={async () => {
+    const phone = telegramTokenRef.current?.value;
+    if (phone) {
+      const token = await auth.currentUser.getIdToken(); // ✅ agora funciona
+      fetch(`${API_URL}/broadcast-history?phone=${encodeURIComponent(phone)}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      })
           .then((res) => res.json())
           .then((json) => setBroadcastHistory(json.items || []))
           .catch(() => alert("Erro ao atualizar histórico"));
