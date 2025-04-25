@@ -502,12 +502,13 @@ async def schedule_broadcast(
 
     trigger = DateTrigger(run_date=send_at)
     scheduler.add_job(
-        perform_broadcast,
-        trigger=trigger,
-        args=[phone, message, recipients, file_key, job_id],
-        id=job_id,
-        replace_existing=True
-    )
+    perform_broadcast,
+    trigger=trigger,
+    args=[phone, message, recipients, file_key, f"recurring-{job_id}"],
+    id=f"recurring-{job_id}",
+    replace_existing=True
+)
+
 
     return {
         "status":   "Broadcast agendado",
