@@ -546,39 +546,37 @@ async def broadcast_history(phone: str, limit: int = Query(default=100, lte=100)
     check_phone_permission(phone, current_uid)
 
     try:
-        docs_ref = (
+        scheduled_ref = (
             firestore_db.collection("scheduled_broadcasts")
             .where("phone", "==", phone)
-            .limit(limit)
         )
-        all_docs = docs_ref.stream()
-        valid_docs = []
 
-        for doc in all_docs:
-            data = doc.to_dict()
-            send_at = data.get("send_at")
-            if isinstance(send_at, datetime) or hasattr(send_at, "timestamp"):
-                data["id"] = doc.id  # 🔑 necessário para identificar depois
-                valid_docs.append((send_at, data))
-
-        # 🔁 Também busca os recorrentes ativos
         recurring_ref = (
             firestore_db.collection("recurring_broadcasts")
             .where("phone", "==", phone)
-            .where("active", "==", True)
         )
+
+        scheduled_docs = scheduled_ref.stream()
         recurring_docs = recurring_ref.stream()
+
+        all_items = []
+
+        for doc in scheduled_docs:
+            data = doc.to_dict()
+            data["id"] = doc.id
+            data["type"] = "one-time"
+            all_items.append(data)
+
         for doc in recurring_docs:
             data = doc.to_dict()
             data["id"] = doc.id
-            data["status"] = "recurring"
-            data["send_at"] = data.get("created_at", datetime.utcnow())  # usa o created_at como referência
-            valid_docs.append((data["send_at"], data))
+            data["type"] = "recurring"
+            all_items.append(data)
 
-        # Ordena por data mais recente
-        valid_docs.sort(key=lambda x: x[0], reverse=True)
+        # Organiza pela data de criação, se houver
+        all_items.sort(key=lambda d: d.get("created_at") or d.get("send_at") or datetime.utcnow(), reverse=True)
 
-        return {"items": [data for _, data in valid_docs]}
+        return {"items": all_items[:limit]}
 
     except Exception as e:
         traceback.print_exc()
@@ -586,6 +584,7 @@ async def broadcast_history(phone: str, limit: int = Query(default=100, lte=100)
             status_code=500,
             content={"detail": f"Erro ao buscar histórico: {str(e)}"},
         )
+
 
 
 @app.post("/cancel-recurring")

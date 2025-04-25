@@ -588,9 +588,28 @@ formData.append("cron", finalCron);
       <span className="text-sm bg-purple-800 px-2 py-1 rounded-full text-white font-semibold">🔁 Recorrente</span>
     )}
   </h5>
-  <span className={`text-sm px-2 py-1 rounded ${item.status === "sent" ? "bg-green-700" : "bg-yellow-700"} text-white`}>
-    {item.status === "sent" ? "✅ Enviado" : item.status === "recurring" ? "⏳ Ativo" : "⏳ Pendente"}
-  </span>
+  <span
+  className={`text-sm px-2 py-1 rounded font-semibold
+    ${
+      item.status === "sent"
+        ? "bg-green-700 text-white"
+        : item.status === "recurring" && item.active === false
+        ? "bg-gray-700 text-red-300"
+        : item.status === "recurring"
+        ? "bg-purple-700 text-white"
+        : "bg-yellow-600 text-white"
+    }
+  `}
+>
+  {item.status === "sent"
+    ? "✅ Enviado"
+    : item.status === "recurring" && item.active === false
+    ? "❌ Cancelado"
+    : item.status === "recurring"
+    ? "⏳ Ativo"
+    : "⏳ Pendente"}
+</span>
+
 </div>
 
 
