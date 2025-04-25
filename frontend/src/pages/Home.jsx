@@ -582,36 +582,34 @@ formData.append("cron", finalCron);
         return (
           <div key={i} className="rounded-lg shadow-md bg-[#1f1f2e] border border-gray-700 p-4">
             <div className="flex justify-between items-center mb-2">
-  <h5 className="text-white font-bold flex items-center gap-2">
-    📨 Disparo {(currentPage * itemsPerPage) + i + 1}
-    {item.status === "recurring" && (
-      <span className="text-sm bg-purple-800 px-2 py-1 rounded-full text-white font-semibold">🔁 Recorrente</span>
-    )}
-  </h5>
-  <span
-  className={`text-sm px-2 py-1 rounded font-semibold
-    ${
-      item.status === "sent"
-        ? "bg-green-700 text-white"
-        : item.status === "recurring" && item.active === false
-        ? "bg-gray-700 text-red-300"
-        : item.status === "recurring"
-        ? "bg-purple-700 text-white"
-        : "bg-yellow-600 text-white"
-    }
-  `}
->
-  {item.status === "sent"
-    ? "✅ Enviado"
-    : item.status === "recurring" && item.active === false
-    ? "❌ Cancelado"
-    : item.status === "recurring"
-    ? "⏳ Ativo"
-    : "⏳ Pendente"}
-</span>
-
-</div>
-
+              <h5 className="text-white font-bold flex items-center gap-2">
+                📨 Disparo {(currentPage * itemsPerPage) + i + 1}
+                {item.status === "recurring" && (
+                  <span className="text-sm bg-purple-800 px-2 py-1 rounded-full text-white font-semibold">🔁 Recorrente</span>
+                )}
+              </h5>
+              <span
+                className={`text-sm px-2 py-1 rounded font-semibold
+                  ${
+                    item.status === "sent"
+                      ? "bg-green-700 text-white"
+                      : item.status === "recurring" && item.active === false
+                      ? "bg-gray-700 text-red-300"
+                      : item.status === "recurring"
+                      ? "bg-purple-700 text-white"
+                      : "bg-yellow-600 text-white"
+                  }
+                `}
+              >
+                {item.status === "sent"
+                  ? "✅ Enviado"
+                  : item.status === "recurring" && item.active === false
+                  ? "❌ Cancelado"
+                  : item.status === "recurring"
+                  ? "⏳ Ativo"
+                  : "⏳ Pendente"}
+              </span>
+            </div>
 
             <div className="text-sm text-gray-300">
               <strong>Mensagem:</strong>{" "}
@@ -635,61 +633,61 @@ formData.append("cron", finalCron);
             </div>
 
             <p className="text-sm text-gray-400">
-  <strong>{item.cron ? "Próxima execução:" : "Agendado para:"}</strong>{" "}
-  {item.cron && item.next_run
-    ? new Date(
-        item.next_run._seconds
-          ? item.next_run._seconds * 1000
-          : Date.parse(item.next_run)
-      ).toLocaleString("pt-BR")
-    : item.send_at?._seconds
-    ? new Date(item.send_at._seconds * 1000).toLocaleString("pt-BR")
-    : "Data inválida"}
-</p>
+              <strong>{item.cron ? "Próxima execução:" : "Agendado para:"}</strong>{" "}
+              {item.cron && item.next_run
+                ? new Date(
+                    item.next_run._seconds
+                      ? item.next_run._seconds * 1000
+                      : Date.parse(item.next_run)
+                  ).toLocaleString("pt-BR")
+                : item.send_at?._seconds
+                ? new Date(item.send_at._seconds * 1000).toLocaleString("pt-BR")
+                : "Data inválida"}
+            </p>
 
             <div className="mt-2 text-sm">
               <span className="text-green-400 mr-4">✔️ Sucesso: {successCount}</span>
               <span className="text-red-400">❌ Erros: {errorCount}</span>
             </div>
             {item.cron && (
-  <button
-    className="text-red-400 text-xs mt-2 underline"
-    onClick={async () => {
-      const confirm = window.confirm("Deseja cancelar esse envio recorrente?");
-      if (!confirm) return;
+              <button
+                className="text-red-400 text-xs mt-2 underline"
+                onClick={async () => {
+                  const confirm = window.confirm("Deseja cancelar esse envio recorrente?");
+                  if (!confirm) return;
 
-      const token = await auth.currentUser.getIdToken();
-      await fetch(`${API_URL}/cancel-recurring`, {
-        method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
-        body: new URLSearchParams({ job_id: item.id }),
-      });
+                  const token = await auth.currentUser.getIdToken();
+                  const response = await fetch(`${API_URL}/cancel-recurring`, {
+                    method: "POST",
+                    headers: { Authorization: `Bearer ${token}` },
+                    body: new URLSearchParams({ job_id: item.id }),
+                  });
 
-      alert("Agendamento recorrente cancelado.");
-      // Atualiza o histórico se quiser após isso
-    }}
-  >
-    ❌ Cancelar Envio Recorrente
-  </button>
-)}
-
-
-            {item.errors && (
-              <details className="mt-2">
-                <summary className="text-red-300 cursor-pointer">Ver detalhes dos erros</summary>
-                <ul className="list-disc list-inside text-sm mt-1 text-red-200">
-                  {Object.entries(item.errors).map(([dest, err], j) => (
-                    <li key={j}><strong>{dest}:</strong> {err}</li>
-                  ))}
-                </ul>
-              </details>
+                  const result = await response.json();
+                  if (response.ok) {
+                    alert("Agendamento recorrente cancelado.");
+                    // Atualiza o status localmente após o cancelamento
+                    setBroadcastHistory(prevHistory =>
+                      prevHistory.map(hist =>
+                        hist.id === item.id
+                          ? { ...hist, status: "Cancelado", active: false }
+                          : hist
+                      )
+                    );
+                  } else {
+                    alert(result.detail || "Erro ao cancelar envio recorrente.");
+                  }
+                }}
+              >
+                ❌ Cancelar Envio Recorrente
+              </button>
             )}
           </div>
         );
       })}
     </div>
 
-    {/* Navegação entre páginas fora do map */}
+    {/* Navegação entre páginas */}
     <div className="flex justify-center items-center gap-4 mt-6">
       <button
         disabled={currentPage === 0}
