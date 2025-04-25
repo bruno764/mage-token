@@ -341,8 +341,9 @@ if (recurringType === "daily") {
   const [h, m] = recurringTime.split(":");
   finalCron = `${m} ${h} 1 * *`;
 } else if (recurringType === "custom") {
-  finalCron = customCron;
+  finalCron = cron;
 }
+console.log("🔁 CRON FINAL:", finalCron); // Veja o valor que está indo!
 
 if (!finalCron.trim()) {
   return alert("⚠️ Campo CRON inválido ou não preenchido.");
