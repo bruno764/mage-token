@@ -727,18 +727,18 @@ formData.append("cron", cron);
           )}
         </div>
 
-        {/* Data/hora agendamento */}
-        <div className="flex items-center gap-2">
-          <input
-            type="datetime-local"
-            value={scheduledAt}
-            onChange={(e) => setScheduledAt(e.target.value)}
-            className="p-2 rounded bg-gray-800 text-white"
-          />
-          <span className="text-gray-400">⏰ Agendar Envio</span>
-        </div>
+        {/* Data/hora agendamento + recorrência */}
+<div className="flex flex-col gap-2">
+  <div className="flex items-center gap-2">
+    <input
+      type="datetime-local"
+      value={scheduledAt}
+      onChange={(e) => setScheduledAt(e.target.value)}
+      className="p-2 rounded bg-gray-800 text-white"
+    />
+    <span className="text-gray-400">⏰ Agendar Envio</span>
+  </div>
 
-        <div className="mt-2 space-y-2">
   <label className="flex items-center gap-2 text-white text-sm">
     <input
       type="checkbox"
@@ -749,79 +749,77 @@ formData.append("cron", cron);
   </label>
 
   {isRecurring && (
-  <>
-    <label className="text-white text-sm font-semibold mt-2 block">🔁 Repetição:</label>
-    <select
-      value={recurringType}
-      onChange={(e) => {
-        const type = e.target.value;
-        setRecurringType(type);
-
-        if (type === "daily") {
-          const [h, m] = recurringTime.split(":");
-          setCron(`${m || "0"} ${h || "7"} * * *`);
-        } else if (type === "weekly") {
-          const [h, m] = recurringTime.split(":");
-          setCron(`${m || "0"} ${h || "7"} * * 1`);
-        } else if (type === "monthly") {
-          const [h, m] = recurringTime.split(":");
-          setCron(`${m || "0"} ${h || "7"} 1 * *`);
-        } else {
-          setCron("");
-        }
-      }}
-      className="w-full p-2 bg-gray-800 text-white rounded"
-    >
-      <option value="">-- Selecione o tipo de repetição --</option>
-      <option value="daily">🗓️ Todo dia</option>
-      <option value="weekly">📅 Toda semana</option>
-      <option value="monthly">📆 Todo mês</option>
-      <option value="custom">⏱️ A cada X minutos/horas</option>
-    </select>
-
-    {recurringType === "custom" && (
-      <>
-        <input
-          type="text"
-          value={cron}
-          onChange={(e) => setCron(e.target.value)}
-          placeholder="Cron (ex: */5 * * * *)"
-          className="w-full p-2 bg-gray-800 text-white rounded mt-1"
-        />
-        <p className="text-sm text-gray-400 mt-1">
-          Exemplos:
-          <br />• A cada 5 min: <code className="text-blue-300">*/5 * * * *</code>
-          <br />• A cada 1h: <code className="text-blue-300">0 * * * *</code>
-          <br />• A cada 2h: <code className="text-blue-300">0 */2 * * *</code>
-        </p>
-      </>
-    )}
-
-    {["daily", "weekly", "monthly"].includes(recurringType) && (
-      <input
-        type="time"
-        value={recurringTime}
+    <>
+      <label className="text-white text-sm font-semibold">🔁 Repetição:</label>
+      <select
+        value={recurringType}
         onChange={(e) => {
-          const [h, m] = e.target.value.split(":");
-          setRecurringTime(e.target.value);
+          const type = e.target.value;
+          setRecurringType(type);
 
-          if (recurringType === "daily") {
-            setCron(`${m} ${h} * * *`);
-          } else if (recurringType === "weekly") {
-            setCron(`${m} ${h} * * 1`);
-          } else if (recurringType === "monthly") {
-            setCron(`${m} ${h} 1 * *`);
+          if (type === "daily") {
+            const [h, m] = recurringTime.split(":");
+            setCron(`${m || "0"} ${h || "7"} * * *`);
+          } else if (type === "weekly") {
+            const [h, m] = recurringTime.split(":");
+            setCron(`${m || "0"} ${h || "7"} * * 1`);
+          } else if (type === "monthly") {
+            const [h, m] = recurringTime.split(":");
+            setCron(`${m || "0"} ${h || "7"} 1 * *`);
+          } else {
+            setCron("");
           }
         }}
-        className="w-full p-2 bg-gray-800 text-white rounded mt-2"
-      />
-    )}
-  </>
-)}
+        className="w-full p-2 bg-gray-800 text-white rounded"
+      >
+        <option value="">-- Selecione o tipo de repetição --</option>
+        <option value="daily">🗓️ Todo dia</option>
+        <option value="weekly">📅 Toda semana</option>
+        <option value="monthly">📆 Todo mês</option>
+        <option value="custom">⏱️ A cada X minutos/horas</option>
+      </select>
 
+      {recurringType === "custom" && (
+        <>
+          <input
+            type="text"
+            value={cron}
+            onChange={(e) => setCron(e.target.value)}
+            placeholder="Cron (ex: */5 * * * *)"
+            className="w-full p-2 bg-gray-800 text-white rounded mt-1"
+          />
+          <p className="text-sm text-gray-400 mt-1">
+            Exemplos:
+            <br />• A cada 5 min: <code className="text-blue-300">*/5 * * * *</code>
+            <br />• A cada 1h: <code className="text-blue-300">0 * * * *</code>
+            <br />• A cada 2h: <code className="text-blue-300">0 */2 * * *</code>
+          </p>
+        </>
+      )}
 
+      {["daily", "weekly", "monthly"].includes(recurringType) && (
+        <input
+          type="time"
+          value={recurringTime}
+          onChange={(e) => {
+            const [h, m] = e.target.value.split(":");
+            setRecurringTime(e.target.value);
 
+            if (recurringType === "daily") {
+              setCron(`${m} ${h} * * *`);
+            } else if (recurringType === "weekly") {
+              setCron(`${m} ${h} * * 1`);
+            } else if (recurringType === "monthly") {
+              setCron(`${m} ${h} 1 * *`);
+            }
+          }}
+          className="w-full p-2 bg-gray-800 text-white rounded mt-2"
+        />
+      )}
+    </>
+  )}
 </div>
+
         {/* Lista de contatos e grupos */}
         <div className="grid grid-cols-2 gap-4">
           <div className="h-48 overflow-y-auto border border-gray-700 rounded p-2 bg-gray-900">
