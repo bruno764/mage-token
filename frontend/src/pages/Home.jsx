@@ -35,7 +35,6 @@ export default function Home() {
   const [recurrenceType, setRecurrenceType] = useState("");
   const [selectedDay, setSelectedDay] = useState("");
   const [selectedDayOfMonth, setSelectedDayOfMonth] = useState("");
-  
 
   
   const messageRef = useRef();
@@ -334,21 +333,22 @@ const totalPages = Math.ceil(broadcastHistory.length / itemsPerPage);
       if (!cron.trim()) {
         return alert("⚠️ Campo CRON obrigatório para envios recorrentes.");
       }
-      let cron = "";
+      let generatedCron = "";
 if (recurringType === "daily") {
   const [h, m] = recurringTime.split(":");
-  cron = `${m} ${h} * * *`;
+  generatedCron = `${m} ${h} * * *`;
 } else if (recurringType === "weekly") {
   const [h, m] = recurringTime.split(":");
-  cron = `${m} ${h} * * 1`; // toda segunda-feira
+  generatedCron = `${m} ${h} * * 1`;
 } else if (recurringType === "monthly") {
   const [h, m] = recurringTime.split(":");
-  cron = `${m} ${h} 1 * *`; // dia 1 de cada mês
+  generatedCron = `${m} ${h} 1 * *`;
 } else if (recurringType === "custom") {
-  cron = customCron;
+  generatedCron = customCron;
 }
-formData.append("cron", cron);
-      formData.append("cron", cron);
+
+formData.append("cron", generatedCron);
+
       
     }
   
