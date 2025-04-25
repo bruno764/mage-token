@@ -27,6 +27,9 @@ export default function Home() {
   const [progress, setProgress] = useState({ current: 0, total: 0 });
   const [finalResult, setFinalResult] = useState(null);
   const [currentPage, setCurrentPage] = useState(0);
+  const [isRecurring, setIsRecurring] = useState(false);
+  const [cron, setCron] = useState(""); // para o campo cron
+
   
   const messageRef = useRef();
   const fileRef = useRef();
@@ -356,26 +359,6 @@ const totalPages = Math.ceil(broadcastHistory.length / itemsPerPage);
     }
   };
   
-  <div className="mt-2">
-  <label className="flex items-center gap-2 text-white text-sm">
-    <input
-      type="checkbox"
-      checked={isRecurring}
-      onChange={(e) => setIsRecurring(e.target.checked)}
-    />
-    🔁 Tornar este envio recorrente?
-  </label>
-  {isRecurring && (
-    <input
-      type="text"
-      value={cron}
-      onChange={(e) => setCron(e.target.value)}
-      placeholder="Cron (ex: 0 7 * * *)"
-      className="w-full p-2 mt-1 rounded bg-gray-800 text-white"
-    />
-  )}
-</div>
-
 
   const handleEnviarCodigo = async () => {
     const phone = telegramTokenRef.current.value;
@@ -710,6 +693,27 @@ const totalPages = Math.ceil(broadcastHistory.length / itemsPerPage);
           />
           <span className="text-gray-400">⏰ Agendar Envio</span>
         </div>
+        
+        <div className="mt-2">
+  <label className="flex items-center gap-2 text-white text-sm">
+    <input
+      type="checkbox"
+      checked={isRecurring}
+      onChange={(e) => setIsRecurring(e.target.checked)}
+    />
+    🔁 Tornar este envio recorrente?
+  </label>
+  {isRecurring && (
+    <input
+      type="text"
+      value={cron}
+      onChange={(e) => setCron(e.target.value)}
+      placeholder="Cron (ex: 0 7 * * *)"
+      className="w-full p-2 mt-1 rounded bg-gray-800 text-white"
+    />
+  )}
+</div>
+
 
         {/* Lista de contatos e grupos */}
         <div className="grid grid-cols-2 gap-4">
