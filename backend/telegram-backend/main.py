@@ -123,75 +123,76 @@ async def perform_broadcast(
     file_key: str = None,
     job_id: str = None
 ):
-    try:
-        restore_session_if_needed(phone)
+    restore_session_if_needed(phone)
 
-        local_file = None
-        if file_key:
-            data = supabase.storage.from_(BUCKET).download(file_key)
-            local_file = os.path.join(TEMP_DIR, os.path.basename(file_key))
-            with open(local_file, "wb") as f:
-                f.write(data)
+    local_file = None
+    if file_key:
+        data = supabase.storage.from_(BUCKET).download(file_key)
+        local_file = os.path.join(TEMP_DIR, os.path.basename(file_key))
+        with open(local_file, "wb") as f:
+            f.write(data)
 
-        client = TelegramClient(f"{SESSION_DIR}/{phone}", API_ID, API_HASH)
-        await client.connect()
+    client = TelegramClient(f"{SESSION_DIR}/{phone}", API_ID, API_HASH)
+    await client.connect()
 
-        for r in [r.strip() for r in recipients.split(",") if r]:
-            try:
-                # 🟢 Grupos/canais: começam com "-" e são IDs inteiros
-                if r.lstrip("-").isdigit():
-                    entity = await client.get_input_entity(int(r))
+    for r in [r.strip() for r in recipients.split(",") if r]:
+        try:
+            if r.lstrip("-").isdigit():
+                entity = await client.get_input_entity(int(r))
+            elif r.replace("+", "").isdigit():
+                formatted = r if r.startswith("+") else f"+{r}"
+                contact = InputPhoneContact(
+                    client_id=0,
+                    phone=formatted,
+                    first_name=" ",
+                    last_name=""
+                )
+                await client(ImportContactsRequest([contact]))
+                entity = await client.get_input_entity(formatted)
+            else:
+                entity = await client.get_input_entity(r)
 
-                # 🔵 Telefones (com ou sem +)
-                elif r.replace("+", "").isdigit():
-                    formatted = r if r.startswith("+") else f"+{r}"
-                    contact = InputPhoneContact(
-                        client_id=0,
-                        phone=formatted,
-                        first_name=" ",  # espaço em branco evita sobrescrever nome
-                        last_name=""
-                    )
-                    await client(ImportContactsRequest([contact]))
-                    entity = await client.get_input_entity(formatted)
+            if local_file:
+                await client.send_file(entity, local_file, caption=message)
+            else:
+                await client.send_message(entity, message)
 
-                # 🟣 Username direto (@exemplo)
-                else:
-                    entity = await client.get_input_entity(r)
+        except Exception as err:
+            print(f"❌ Erro ao enviar para {r}: {err}")
+            if job_id:
+                firestore_db.collection("scheduled_broadcasts").document(job_id).update({
+                    f"errors.{r}": str(err)
+                })
 
-                # Envio da mensagem ou arquivo
-                if local_file:
-                    await client.send_file(entity, local_file, caption=message)
-                else:
-                    await client.send_message(entity, message)
+    await client.disconnect()
 
-            except Exception as err:
-                print(f"❌ Erro ao enviar para {r}: {err}")
-                if job_id:
-                    firestore_db.collection("scheduled_broadcasts").document(job_id).update({
-                        f"errors.{r}": str(err)
-                    })
-
-        await client.disconnect()
-
-        if job_id:
-            firestore_db.collection("scheduled_broadcasts").document(job_id).update({
+    if job_id:
+        doc_ref = firestore_db.collection("scheduled_broadcasts").document(job_id)
+        doc = doc_ref.get()
+        if doc.exists:
+            doc_ref.update({
                 "status": "sent",
                 "sent_at": datetime.utcnow()
             })
 
-        if local_file and os.path.exists(local_file):
-            os.remove(local_file)
+    if local_file and os.path.exists(local_file):
+        os.remove(local_file)
 
-        # 🔁 Atualiza o próximo horário caso seja recorrente
-        if job_id and job_id.startswith("recurring-"):
-            job = scheduler.get_job(job_id)
-            if job and job.next_run_time:
-                firestore_db.collection("recurring_broadcasts").document(job_id.replace("recurring-", "")).update({
-                    "next_run": job.next_run_time
-                })
+    if job_id and job_id.startswith("recurring-"):
+        job = scheduler.get_job(job_id)
+        if job and job.next_run_time:
+            # Verifica se o job ainda existe
+            firestore_db.collection("recurring_broadcasts").document(job_id.replace("recurring-", "")).update({
+                "next_run": job.next_run_time
+            })
+        else:
+            print(f"⚠️ O job {job_id} não foi encontrado ou não possui tempo de execução.")
+        try:
+            # Garantir que o job seja removido
+            scheduler.remove_job(job_id)
+        except Exception as e:
+            print(f"Erro ao remover o job: {e}")
 
-    except Exception as e:
-        print(f"Erro no broadcast: {e}")
 
 
 # 🔁 Agendamentos recorrentes
@@ -546,7 +547,7 @@ async def schedule_recurring(
         "recipients": recipients,
         "cron": cron,
         "file_key": file_key,
-        "active": True,
+        "active": True,  # Status inicial é 'Ativo'
         "created_at": datetime.utcnow(),
         "next_run": next_run
     })
@@ -566,6 +567,7 @@ async def schedule_recurring(
         "job_id": job_id,
         "next_run": next_run.isoformat()
     }
+
 
 
 @app.get("/broadcast-history")
@@ -619,21 +621,20 @@ async def cancel_recurring(job_id: str = Form(...), current_uid: str = Depends(g
     try:
         doc_ref = firestore_db.collection("recurring_broadcasts").document(job_id)
         doc = doc_ref.get()
-        
+
+        # Verifica se o agendamento existe e se o UID corresponde
         if not doc.exists or doc.to_dict().get("uid") != current_uid:
             raise HTTPException(status_code=403, detail="Agendamento não encontrado ou sem permissão.")
 
-        # Antes de remover o job, verifica se ele existe na agenda
-        job = scheduler.get_job(job_id)
-        if job:
-            # Remover o job da agenda
-            scheduler.remove_job(job_id)
-        else:
-            print(f"⚠️ Job {job_id} não encontrado na agenda!")
+        # Atualiza o status para "Cancelado"
+        doc_ref.update({
+            "active": False,  # Muda para 'Cancelado'
+            "status": "Cancelado",  # Atualiza o status no Firestore
+        })
 
-        # Atualiza o status do agendamento para inativo no Firestore
-        doc_ref.update({"active": False})
-        
+        # Remove o job do agendador
+        scheduler.remove_job(job_id)
+
         return {"status": "Agendamento recorrente cancelado"}
 
     except Exception as e:

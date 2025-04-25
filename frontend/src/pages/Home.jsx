@@ -657,26 +657,14 @@ formData.append("cron", finalCron);
                   if (!confirm) return;
 
                   const token = await auth.currentUser.getIdToken();
-                  const response = await fetch(`${API_URL}/cancel-recurring`, {
+                  await fetch(`${API_URL}/cancel-recurring`, {
                     method: "POST",
                     headers: { Authorization: `Bearer ${token}` },
                     body: new URLSearchParams({ job_id: item.id }),
                   });
 
-                  const result = await response.json();
-                  if (response.ok) {
-                    alert("Agendamento recorrente cancelado.");
-                    // Atualiza o status localmente após o cancelamento
-                    setBroadcastHistory(prevHistory =>
-                      prevHistory.map(hist =>
-                        hist.id === item.id
-                          ? { ...hist, status: "Cancelado", active: false }
-                          : hist
-                      )
-                    );
-                  } else {
-                    alert(result.detail || "Erro ao cancelar envio recorrente.");
-                  }
+                  alert("Agendamento recorrente cancelado.");
+                  // Atualiza o histórico se quiser após isso
                 }}
               >
                 ❌ Cancelar Envio Recorrente
@@ -687,7 +675,7 @@ formData.append("cron", finalCron);
       })}
     </div>
 
-    {/* Navegação entre páginas */}
+    {/* Navegação entre páginas fora do map */}
     <div className="flex justify-center items-center gap-4 mt-6">
       <button
         disabled={currentPage === 0}
@@ -709,6 +697,7 @@ formData.append("cron", finalCron);
     </div>
   </div>
 )}
+
 
 
 
