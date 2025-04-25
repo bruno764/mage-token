@@ -97,6 +97,7 @@ const totalPages = Math.ceil(broadcastHistory.length / itemsPerPage);
         alert("Erro ao buscar histórico de envios.");
       }
     };
+    
 
     if (activeTab === "telegram" && telegramTokenRef.current?.value) {
       fetchBroadcastHistory();
