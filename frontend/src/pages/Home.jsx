@@ -32,7 +32,10 @@ export default function Home() {
   const [recurringType, setRecurringType] = useState("");
   const [recurringTime, setRecurringTime] = useState("07:00");
   const [customCron, setCustomCron] = useState("");
-
+  const [recurrenceType, setRecurrenceType] = useState("");
+  const [selectedDay, setSelectedDay] = useState("");
+  const [selectedDayOfMonth, setSelectedDayOfMonth] = useState("");
+  
 
   
   const messageRef = useRef();
@@ -746,43 +749,62 @@ formData.append("cron", cron);
   </label>
 
   {isRecurring && (
-    <>
-      <select
-        value={recurringType}
-        onChange={(e) => setRecurringType(e.target.value)}
+  <div className="space-y-2 mt-2">
+    <label className="text-white text-sm font-bold">🔁 Repetição:</label>
+    <select
+      value={recurringType}
+      onChange={(e) => setRecurringType(e.target.value)}
+      className="w-full p-2 bg-gray-800 text-white rounded"
+    >
+      <option value="">-- Selecione o tipo de repetição --</option>
+      <option value="daily">🗓️ Todo dia</option>
+      <option value="weekly">📅 Toda semana</option>
+      <option value="monthly">📆 Todo mês</option>
+      <option value="custom">⏱️ A cada X minutos/horas</option>
+    </select>
+
+    {recurringType === "custom" && (
+      <input
+        type="text"
+        value={customCron}
+        onChange={(e) => {
+          setCustomCron(e.target.value);
+          setCron(e.target.value); // define o cron para envio
+        }}
+        placeholder="Cron (ex: */5 * * * *)"
         className="w-full p-2 bg-gray-800 text-white rounded"
-      >
-        <option value="">-- Selecione o tipo de repetição --</option>
-        <option value="daily">🗓️ Todo dia</option>
-        <option value="weekly">📅 Toda semana</option>
-        <option value="monthly">📆 Todo mês</option>
-        <option value="custom">⏱️ A cada X minutos/horas</option>
-      </select>
+      />
+    )}
 
-      {recurringType === "custom" && (
-        <input
-          type="text"
-          value={customCron}
-          onChange={(e) => setCustomCron(e.target.value)}
-          placeholder="Cron (ex: */5 * * * *)"
-          className="w-full p-2 bg-gray-800 text-white rounded"
-        />
-      )}
+    {["daily", "weekly", "monthly"].includes(recurringType) && (
+      <input
+        type="time"
+        value={recurringTime}
+        onChange={(e) => {
+          const [hour, minute] = e.target.value.split(":");
+          let generatedCron = "";
 
-      {["daily", "weekly", "monthly"].includes(recurringType) && (
-        <input
-          type="time"
-          value={recurringTime}
-          onChange={(e) => setRecurringTime(e.target.value)}
-          className="w-full p-2 bg-gray-800 text-white rounded"
-        />
-      )}
-    </>
-  )}
+          if (recurringType === "daily") {
+            generatedCron = `${minute} ${hour} * * *`;
+          } else if (recurringType === "weekly") {
+            // default: segunda-feira
+            generatedCron = `${minute} ${hour} * * 1`;
+          } else if (recurringType === "monthly") {
+            // default: dia 1
+            generatedCron = `${minute} ${hour} 1 * *`;
+          }
+
+          setRecurringTime(e.target.value);
+          setCron(generatedCron);
+        }}
+        className="w-full p-2 bg-gray-800 text-white rounded"
+      />
+    )}
+  </div>
+)}
+
+
 </div>
-
-
-
         {/* Lista de contatos e grupos */}
         <div className="grid grid-cols-2 gap-4">
           <div className="h-48 overflow-y-auto border border-gray-700 rounded p-2 bg-gray-900">
