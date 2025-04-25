@@ -29,6 +29,10 @@ export default function Home() {
   const [currentPage, setCurrentPage] = useState(0);
   const [isRecurring, setIsRecurring] = useState(false);
   const [cron, setCron] = useState(""); // para o campo cron
+  const [recurringType, setRecurringType] = useState("");
+  const [recurringTime, setRecurringTime] = useState("07:00");
+  const [customCron, setCustomCron] = useState("");
+
 
   
   const messageRef = useRef();
@@ -327,7 +331,22 @@ const totalPages = Math.ceil(broadcastHistory.length / itemsPerPage);
       if (!cron.trim()) {
         return alert("⚠️ Campo CRON obrigatório para envios recorrentes.");
       }
+      let cron = "";
+if (recurringType === "daily") {
+  const [h, m] = recurringTime.split(":");
+  cron = `${m} ${h} * * *`;
+} else if (recurringType === "weekly") {
+  const [h, m] = recurringTime.split(":");
+  cron = `${m} ${h} * * 1`; // toda segunda-feira
+} else if (recurringType === "monthly") {
+  const [h, m] = recurringTime.split(":");
+  cron = `${m} ${h} 1 * *`; // dia 1 de cada mês
+} else if (recurringType === "custom") {
+  cron = customCron;
+}
+formData.append("cron", cron);
       formData.append("cron", cron);
+      
     }
   
     // 👇 endpoint muda de acordo com o tipo
@@ -595,6 +614,28 @@ const totalPages = Math.ceil(broadcastHistory.length / itemsPerPage);
               <span className="text-green-400 mr-4">✔️ Sucesso: {successCount}</span>
               <span className="text-red-400">❌ Erros: {errorCount}</span>
             </div>
+            {item.cron && (
+  <button
+    className="text-red-400 text-xs mt-2 underline"
+    onClick={async () => {
+      const confirm = window.confirm("Deseja cancelar esse envio recorrente?");
+      if (!confirm) return;
+
+      const token = await auth.currentUser.getIdToken();
+      await fetch(`${API_URL}/cancel-recurring`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+        body: new URLSearchParams({ job_id: item.id }),
+      });
+
+      alert("Agendamento recorrente cancelado.");
+      // Atualiza o histórico se quiser após isso
+    }}
+  >
+    ❌ Cancelar Envio Recorrente
+  </button>
+)}
+
 
             {item.errors && (
               <details className="mt-2">
@@ -693,8 +734,8 @@ const totalPages = Math.ceil(broadcastHistory.length / itemsPerPage);
           />
           <span className="text-gray-400">⏰ Agendar Envio</span>
         </div>
-        
-        <div className="mt-2">
+
+        <div className="mt-2 space-y-2">
   <label className="flex items-center gap-2 text-white text-sm">
     <input
       type="checkbox"
@@ -703,16 +744,43 @@ const totalPages = Math.ceil(broadcastHistory.length / itemsPerPage);
     />
     🔁 Tornar este envio recorrente?
   </label>
+
   {isRecurring && (
-    <input
-      type="text"
-      value={cron}
-      onChange={(e) => setCron(e.target.value)}
-      placeholder="Cron (ex: 0 7 * * *)"
-      className="w-full p-2 mt-1 rounded bg-gray-800 text-white"
-    />
+    <>
+      <select
+        value={recurringType}
+        onChange={(e) => setRecurringType(e.target.value)}
+        className="w-full p-2 bg-gray-800 text-white rounded"
+      >
+        <option value="">-- Selecione o tipo de repetição --</option>
+        <option value="daily">🗓️ Todo dia</option>
+        <option value="weekly">📅 Toda semana</option>
+        <option value="monthly">📆 Todo mês</option>
+        <option value="custom">⏱️ A cada X minutos/horas</option>
+      </select>
+
+      {recurringType === "custom" && (
+        <input
+          type="text"
+          value={customCron}
+          onChange={(e) => setCustomCron(e.target.value)}
+          placeholder="Cron (ex: */5 * * * *)"
+          className="w-full p-2 bg-gray-800 text-white rounded"
+        />
+      )}
+
+      {["daily", "weekly", "monthly"].includes(recurringType) && (
+        <input
+          type="time"
+          value={recurringTime}
+          onChange={(e) => setRecurringTime(e.target.value)}
+          className="w-full p-2 bg-gray-800 text-white rounded"
+        />
+      )}
+    </>
   )}
 </div>
+
 
 
         {/* Lista de contatos e grupos */}

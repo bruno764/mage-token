@@ -572,4 +572,15 @@ async def broadcast_history(phone: str, limit: int = Query(default=100, lte=100)
             content={"detail": f"Erro ao buscar histórico: {str(e)}"},
         )
 
+@app.post("/cancel-recurring")
+async def cancel_recurring(job_id: str = Form(...), current_uid: str = Depends(get_current_user)):
+    doc_ref = firestore_db.collection("recurring_broadcasts").document(job_id)
+    doc = doc_ref.get()
+    if not doc.exists or doc.to_dict().get("uid") != current_uid:
+        raise HTTPException(status_code=403, detail="Agendamento não encontrado ou sem permissão.")
+
+    doc_ref.update({"active": False})
+    scheduler.remove_job(f"recurring-{job_id}")
+
+    return {"status": "Agendamento recorrente cancelado"}
 
