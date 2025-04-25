@@ -636,7 +636,12 @@ async def cancel_recurring(job_id: str = Form(...), current_uid: str = Depends(g
         scheduler.remove_job(job_id)
 
         # Retorna o status de sucesso
-        return {"status": "Agendamento recorrente cancelado"}
+        return {"status": "Agendamento recorrente cancelado", "job_id": job_id}
+
+    except Exception as e:
+        print(f"Erro ao cancelar agendamento: {e}")
+        raise HTTPException(status_code=500, detail="Erro ao cancelar agendamento.")
+
 
     except Exception as e:
         print(f"Erro ao cancelar agendamento: {e}")
