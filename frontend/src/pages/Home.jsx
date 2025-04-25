@@ -330,24 +330,25 @@ const totalPages = Math.ceil(broadcastHistory.length / itemsPerPage);
   
     // 👇 se for recorrente, adiciona o cron
     if (isRecurring) {
-      if (!cron.trim()) {
-        return alert("⚠️ Campo CRON obrigatório para envios recorrentes.");
-      }
-      let generatedCron = "";
+      let finalCron = "";
 if (recurringType === "daily") {
   const [h, m] = recurringTime.split(":");
-  generatedCron = `${m} ${h} * * *`;
+  finalCron = `${m} ${h} * * *`;
 } else if (recurringType === "weekly") {
   const [h, m] = recurringTime.split(":");
-  generatedCron = `${m} ${h} * * 1`;
+  finalCron = `${m} ${h} * * 1`;
 } else if (recurringType === "monthly") {
   const [h, m] = recurringTime.split(":");
-  generatedCron = `${m} ${h} 1 * *`;
+  finalCron = `${m} ${h} 1 * *`;
 } else if (recurringType === "custom") {
-  generatedCron = customCron;
+  finalCron = customCron;
 }
 
-formData.append("cron", generatedCron);
+if (!finalCron.trim()) {
+  return alert("⚠️ Campo CRON inválido ou não preenchido.");
+}
+
+formData.append("cron", finalCron);
 
       
     }
