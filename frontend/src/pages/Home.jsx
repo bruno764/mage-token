@@ -633,17 +633,14 @@ formData.append("cron", finalCron);
             </div>
 
             <p className="text-sm text-gray-400">
-              <strong>{item.cron ? "Próxima execução:" : "Agendado para:"}</strong>{" "}
-              {item.cron && item.next_run
-                ? new Date(
-                    item.next_run._seconds
-                      ? item.next_run._seconds * 1000
-                      : Date.parse(item.next_run)
-                  ).toLocaleString("pt-BR")
-                : item.send_at?._seconds
-                ? new Date(item.send_at._seconds * 1000).toLocaleString("pt-BR")
-                : "Data inválida"}
-            </p>
+  <strong>Próxima execução:</strong>{" "}
+  {item.status === "Cancelado" || item.active === false
+    ? "Cancelado"
+    : item.cron && item.next_run
+    ? new Date(item.next_run._seconds * 1000).toLocaleString("pt-BR")
+    : "Data inválida"}
+</p>
+
 
             <div className="mt-2 text-sm">
               <span className="text-green-400 mr-4">✔️ Sucesso: {successCount}</span>
@@ -651,24 +648,43 @@ formData.append("cron", finalCron);
             </div>
             {item.cron && (
               <button
-                className="text-red-400 text-xs mt-2 underline"
-                onClick={async () => {
-                  const confirm = window.confirm("Deseja cancelar esse envio recorrente?");
-                  if (!confirm) return;
-
-                  const token = await auth.currentUser.getIdToken();
-                  await fetch(`${API_URL}/cancel-recurring`, {
+              className="text-red-400 text-xs mt-2 underline"
+              onClick={async () => {
+                const confirm = window.confirm("Deseja cancelar esse envio recorrente?");
+                if (!confirm) return;
+            
+                const token = await auth.currentUser.getIdToken();
+                try {
+                  const res = await fetch(`${API_URL}/cancel-recurring`, {
                     method: "POST",
                     headers: { Authorization: `Bearer ${token}` },
                     body: new URLSearchParams({ job_id: item.id }),
                   });
-
-                  alert("Agendamento recorrente cancelado.");
-                  // Atualiza o histórico se quiser após isso
-                }}
-              >
-                ❌ Cancelar Envio Recorrente
-              </button>
+            
+                  if (res.ok) {
+                    alert("Agendamento recorrente cancelado.");
+            
+                    // Atualiza o histórico após o cancelamento
+                    const updatedHistory = broadcastHistory.map((historyItem) =>
+                      historyItem.id === item.id ? { ...historyItem, status: "Cancelado", active: false } : historyItem
+                    );
+                    setBroadcastHistory(updatedHistory);
+            
+                    // Após o cancelamento, defina isRecurring como false
+                    setIsRecurring(false); // Isso impede que o envio recorrente seja reativado acidentalmente
+                  } else {
+                    alert("Erro ao cancelar agendamento recorrente.");
+                  }
+                } catch (error) {
+                  alert("Erro ao cancelar agendamento.");
+                  console.error(error);
+                }
+              }}
+            >
+              ❌ Cancelar Envio Recorrente
+            </button>
+            
+            
             )}
           </div>
         );

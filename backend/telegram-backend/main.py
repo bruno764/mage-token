@@ -626,18 +626,18 @@ async def cancel_recurring(job_id: str = Form(...), current_uid: str = Depends(g
         if not doc.exists or doc.to_dict().get("uid") != current_uid:
             raise HTTPException(status_code=403, detail="Agendamento não encontrado ou sem permissão.")
 
-        # Atualiza o status para "Cancelado"
+        # Atualiza o status para "Cancelado" no Firestore
         doc_ref.update({
-            "active": False,  # Muda para 'Cancelado'
+            "active": False,  # Desativa o agendamento
             "status": "Cancelado",  # Atualiza o status no Firestore
         })
 
-        # Remove o job do agendador
+        # Remove o job do agendador para que ele não execute mais
         scheduler.remove_job(job_id)
 
+        # Retorna o status de sucesso
         return {"status": "Agendamento recorrente cancelado"}
 
     except Exception as e:
         print(f"Erro ao cancelar agendamento: {e}")
         raise HTTPException(status_code=500, detail="Erro ao cancelar agendamento.")
-
