@@ -635,11 +635,18 @@ formData.append("cron", finalCron);
             </div>
 
             <p className="text-sm text-gray-400">
-              <strong>Agendado para:</strong>{" "}
-              {item.send_at?._seconds
-                ? new Date(item.send_at._seconds * 1000).toLocaleString("pt-BR")
-                : "Data inválida"}
-            </p>
+  <strong>{item.cron ? "Próxima execução:" : "Agendado para:"}</strong>{" "}
+  {item.cron && item.next_run
+    ? new Date(
+        item.next_run._seconds
+          ? item.next_run._seconds * 1000
+          : Date.parse(item.next_run)
+      ).toLocaleString("pt-BR")
+    : item.send_at?._seconds
+    ? new Date(item.send_at._seconds * 1000).toLocaleString("pt-BR")
+    : "Data inválida"}
+</p>
+
             <div className="mt-2 text-sm">
               <span className="text-green-400 mr-4">✔️ Sucesso: {successCount}</span>
               <span className="text-red-400">❌ Erros: {errorCount}</span>

@@ -4,6 +4,7 @@ import os
 import json
 import shutil
 import base64
+import pytz
 from uuid import uuid4
 from datetime import datetime, timezone
 from contextlib import asynccontextmanager
@@ -16,7 +17,11 @@ from apscheduler.triggers.date import DateTrigger
 from fastapi.responses import JSONResponse
 from apscheduler.triggers.cron import CronTrigger
 from fastapi import Body
-
+from apscheduler.triggers.cron import CronTrigger
+from datetime import datetime
+from uuid import uuid4
+from apscheduler.triggers.cron import CronTrigger
+from datetime import datetime
 
 from telethon.sync import TelegramClient
 from telethon.errors.rpcerrorlist import FloodWaitError
@@ -118,64 +123,77 @@ async def perform_broadcast(
     file_key: str = None,
     job_id: str = None
 ):
-    restore_session_if_needed(phone)
+    try:
+        restore_session_if_needed(phone)
 
-    local_file = None
-    if file_key:
-        data = supabase.storage.from_(BUCKET).download(file_key)
-        local_file = os.path.join(TEMP_DIR, os.path.basename(file_key))
-        with open(local_file, "wb") as f:
-            f.write(data)
+        local_file = None
+        if file_key:
+            data = supabase.storage.from_(BUCKET).download(file_key)
+            local_file = os.path.join(TEMP_DIR, os.path.basename(file_key))
+            with open(local_file, "wb") as f:
+                f.write(data)
 
-    client = TelegramClient(f"{SESSION_DIR}/{phone}", API_ID, API_HASH)
-    await client.connect()
+        client = TelegramClient(f"{SESSION_DIR}/{phone}", API_ID, API_HASH)
+        await client.connect()
 
-    for r in [r.strip() for r in recipients.split(",") if r]:
-        try:
-            # 🟢 Grupos/canais: começam com "-" e são IDs inteiros
-            if r.lstrip("-").isdigit():
-                entity = await client.get_input_entity(int(r))
+        for r in [r.strip() for r in recipients.split(",") if r]:
+            try:
+                # 🟢 Grupos/canais: começam com "-" e são IDs inteiros
+                if r.lstrip("-").isdigit():
+                    entity = await client.get_input_entity(int(r))
 
-            # 🔵 Telefones (com ou sem +)
-            elif r.replace("+", "").isdigit():
-                formatted = r if r.startswith("+") else f"+{r}"
-                contact = InputPhoneContact(
-                    client_id=0,
-                    phone=formatted,
-                    first_name=" ",  # espaço em branco evita sobrescrever nome
-                    last_name=""
-                )
-                await client(ImportContactsRequest([contact]))
-                entity = await client.get_input_entity(formatted)
+                # 🔵 Telefones (com ou sem +)
+                elif r.replace("+", "").isdigit():
+                    formatted = r if r.startswith("+") else f"+{r}"
+                    contact = InputPhoneContact(
+                        client_id=0,
+                        phone=formatted,
+                        first_name=" ",  # espaço em branco evita sobrescrever nome
+                        last_name=""
+                    )
+                    await client(ImportContactsRequest([contact]))
+                    entity = await client.get_input_entity(formatted)
 
-            # 🟣 Username direto (@exemplo)
-            else:
-                entity = await client.get_input_entity(r)
+                # 🟣 Username direto (@exemplo)
+                else:
+                    entity = await client.get_input_entity(r)
 
-            # Envio da mensagem ou arquivo
-            if local_file:
-                await client.send_file(entity, local_file, caption=message)
-            else:
-                await client.send_message(entity, message)
+                # Envio da mensagem ou arquivo
+                if local_file:
+                    await client.send_file(entity, local_file, caption=message)
+                else:
+                    await client.send_message(entity, message)
 
-        except Exception as err:
-            print(f"❌ Erro ao enviar para {r}: {err}")
-            if job_id:
-                firestore_db.collection("scheduled_broadcasts").document(job_id).update({
-                    f"errors.{r}": str(err)
+            except Exception as err:
+                print(f"❌ Erro ao enviar para {r}: {err}")
+                if job_id:
+                    firestore_db.collection("scheduled_broadcasts").document(job_id).update({
+                        f"errors.{r}": str(err)
+                    })
+
+        await client.disconnect()
+
+        if job_id:
+            firestore_db.collection("scheduled_broadcasts").document(job_id).update({
+                "status": "sent",
+                "sent_at": datetime.utcnow()
+            })
+
+        if local_file and os.path.exists(local_file):
+            os.remove(local_file)
+
+        # 🔁 Atualiza o próximo horário caso seja recorrente
+        if job_id and job_id.startswith("recurring-"):
+            job = scheduler.get_job(job_id)
+            if job and job.next_run_time:
+                firestore_db.collection("recurring_broadcasts").document(job_id.replace("recurring-", "")).update({
+                    "next_run": job.next_run_time
                 })
 
-    await client.disconnect()
+    except Exception as e:
+        print(f"Erro no broadcast: {e}")
 
-    if job_id:
-        firestore_db.collection("scheduled_broadcasts").document(job_id).update({
-            "status": "sent",
-            "sent_at": datetime.utcnow()
-        })
 
-    if local_file and os.path.exists(local_file):
-        os.remove(local_file)
-        
 # 🔁 Agendamentos recorrentes
 try:
     recurring_jobs = firestore_db.collection("recurring_broadcasts").where("active", "==", True).stream()
@@ -503,7 +521,7 @@ async def schedule_recurring(
     phone: str = Form(...),
     message: str = Form(...),
     recipients: str = Form(...),
-    cron: str = Form(...),  # exemplo: "0 7 * * *"
+    cron: str = Form(...),
     file: UploadFile = File(None),
     current_uid: str = Depends(get_current_user)
 ):
@@ -516,20 +534,26 @@ async def schedule_recurring(
         supabase.storage.from_(BUCKET).upload(file_key, raw)
 
     job_id = uuid4().hex
+    trigger = CronTrigger.from_crontab(cron)
+    next_run = trigger.get_next_fire_time(None, datetime.utcnow())
+
+    # 🔥 Salva no Firestore
     firestore_db.collection("recurring_broadcasts").document(job_id).set({
-        "uid":        current_uid,
-        "phone":      phone,
-        "message":    message,
+        "uid": current_uid,
+        "phone": phone,
+        "message": message,
         "recipients": recipients,
-        "cron":       cron,
-        "file_key":   file_key,
-        "active":     True,
-        "created_at": datetime.utcnow()
+        "cron": cron,
+        "file_key": file_key,
+        "active": True,
+        "created_at": datetime.utcnow(),
+        "next_run": next_run
     })
 
+    # ⏰ Registra no APScheduler
     scheduler.add_job(
         perform_broadcast,
-        trigger=CronTrigger.from_crontab(cron),
+        trigger=trigger,
         args=[phone, message, recipients, file_key, job_id],
         id=job_id,
         replace_existing=True
@@ -538,8 +562,10 @@ async def schedule_recurring(
     return {
         "status": "Agendamento recorrente criado",
         "cron": cron,
-        "job_id": job_id
+        "job_id": job_id,
+        "next_run": next_run.isoformat()
     }
+
 
 @app.get("/broadcast-history")
 async def broadcast_history(phone: str, limit: int = Query(default=100, lte=100), current_uid: str = Depends(get_current_user)):
