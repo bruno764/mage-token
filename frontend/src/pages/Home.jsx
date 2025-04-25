@@ -89,12 +89,49 @@ const totalPages = Math.ceil(broadcastHistory.length / itemsPerPage);
       try {
         const phone = telegramTokenRef.current?.value;
         if (!phone) return;
-        const res = await fetch(`${API_URL}/broadcast-history?phone=${phone}`);
+        const token = await auth.currentUser.getIdToken();
+        const res = await fetch(`${API_URL}/broadcast-history?phone=${phone}`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
         const json = await res.json();
-        setBroadcastHistory(json.items || []);
+        setBroadcastHistory(json.items || []); // Atualiza com os dados mais recentes
       } catch (err) {
         console.error("Erro ao buscar histórico:", err);
         alert("Erro ao buscar histórico de envios.");
+      }
+    };
+    
+    // Função para cancelar o envio recorrente e atualizar o estado
+    const handleCancelRecurring = async (itemId) => {
+      const confirm = window.confirm("Deseja cancelar esse envio recorrente?");
+      if (!confirm) return;
+    
+      const token = await auth.currentUser.getIdToken();
+      const res = await fetch(`${API_URL}/cancel-recurring`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: new URLSearchParams({ job_id: itemId }),
+      });
+    
+      if (res.ok) {
+        alert("Agendamento recorrente cancelado.");
+    
+        // Atualiza o histórico local imediatamente após o cancelamento
+        const updatedHistory = broadcastHistory.map((historyItem) =>
+          historyItem.id === itemId
+            ? { ...historyItem, status: "Cancelado", active: false }
+            : historyItem
+        );
+        setBroadcastHistory(updatedHistory);
+    
+        // Também recarrega o histórico mais atualizado após a mudança
+        fetchBroadcastHistory();
+      } else {
+        alert("Erro ao cancelar agendamento recorrente.");
       }
     };
     
