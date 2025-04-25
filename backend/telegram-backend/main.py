@@ -551,7 +551,6 @@ async def broadcast_history(phone: str, limit: int = Query(default=100, lte=100)
             .where("phone", "==", phone)
             .limit(limit)
         )
-
         all_docs = docs_ref.stream()
         valid_docs = []
 
@@ -559,8 +558,24 @@ async def broadcast_history(phone: str, limit: int = Query(default=100, lte=100)
             data = doc.to_dict()
             send_at = data.get("send_at")
             if isinstance(send_at, datetime) or hasattr(send_at, "timestamp"):
+                data["id"] = doc.id  # 🔑 necessário para identificar depois
                 valid_docs.append((send_at, data))
 
+        # 🔁 Também busca os recorrentes ativos
+        recurring_ref = (
+            firestore_db.collection("recurring_broadcasts")
+            .where("phone", "==", phone)
+            .where("active", "==", True)
+        )
+        recurring_docs = recurring_ref.stream()
+        for doc in recurring_docs:
+            data = doc.to_dict()
+            data["id"] = doc.id
+            data["status"] = "recurring"
+            data["send_at"] = data.get("created_at", datetime.utcnow())  # usa o created_at como referência
+            valid_docs.append((data["send_at"], data))
+
+        # Ordena por data mais recente
         valid_docs.sort(key=lambda x: x[0], reverse=True)
 
         return {"items": [data for _, data in valid_docs]}
@@ -571,6 +586,7 @@ async def broadcast_history(phone: str, limit: int = Query(default=100, lte=100)
             status_code=500,
             content={"detail": f"Erro ao buscar histórico: {str(e)}"},
         )
+
 
 @app.post("/cancel-recurring")
 async def cancel_recurring(job_id: str = Form(...), current_uid: str = Depends(get_current_user)):

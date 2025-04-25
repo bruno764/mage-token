@@ -582,11 +582,17 @@ formData.append("cron", finalCron);
         return (
           <div key={i} className="rounded-lg shadow-md bg-[#1f1f2e] border border-gray-700 p-4">
             <div className="flex justify-between items-center mb-2">
-              <h5 className="text-white font-bold">📨 Disparo {(currentPage * itemsPerPage) + i + 1}</h5>
-              <span className={`text-sm px-2 py-1 rounded ${item.status === "sent" ? "bg-green-700 text-white" : "bg-yellow-700 text-white"}`}>
-                {item.status === "sent" ? "✅ Enviado" : "⏳ Pendente"}
-              </span>
-            </div>
+  <h5 className="text-white font-bold flex items-center gap-2">
+    📨 Disparo {(currentPage * itemsPerPage) + i + 1}
+    {item.status === "recurring" && (
+      <span className="text-sm bg-purple-800 px-2 py-1 rounded-full text-white font-semibold">🔁 Recorrente</span>
+    )}
+  </h5>
+  <span className={`text-sm px-2 py-1 rounded ${item.status === "sent" ? "bg-green-700" : "bg-yellow-700"} text-white`}>
+    {item.status === "sent" ? "✅ Enviado" : item.status === "recurring" ? "⏳ Ativo" : "⏳ Pendente"}
+  </span>
+</div>
+
 
             <div className="text-sm text-gray-300">
               <strong>Mensagem:</strong>{" "}
