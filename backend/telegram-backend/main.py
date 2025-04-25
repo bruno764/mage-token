@@ -642,7 +642,3 @@ async def cancel_recurring(job_id: str = Form(...), current_uid: str = Depends(g
         print(f"Erro ao cancelar agendamento: {e}")
         raise HTTPException(status_code=500, detail="Erro ao cancelar agendamento.")
 
-
-    except Exception as e:
-        print(f"Erro ao cancelar agendamento: {e}")
-        raise HTTPException(status_code=500, detail="Erro ao cancelar agendamento.")

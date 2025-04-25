@@ -96,12 +96,14 @@ const totalPages = Math.ceil(broadcastHistory.length / itemsPerPage);
           },
         });
         const json = await res.json();
+        console.log("Histórico carregado: ", json.items);  // Verifique os dados retornados
         setBroadcastHistory(json.items || []); // Atualiza com os dados mais recentes
       } catch (err) {
         console.error("Erro ao buscar histórico:", err);
         alert("Erro ao buscar histórico de envios.");
       }
     };
+    
     
     // Função para cancelar o envio recorrente e atualizar o estado
     const handleCancelRecurring = async (itemId) => {
@@ -120,7 +122,7 @@ const totalPages = Math.ceil(broadcastHistory.length / itemsPerPage);
       if (res.ok) {
         alert("Agendamento recorrente cancelado.");
     
-        // Atualiza o histórico local imediatamente após o cancelamento
+        // Atualiza o histórico com status 'Cancelado' localmente
         const updatedHistory = broadcastHistory.map((historyItem) =>
           historyItem.id === itemId
             ? { ...historyItem, status: "Cancelado", active: false }
@@ -128,12 +130,13 @@ const totalPages = Math.ceil(broadcastHistory.length / itemsPerPage);
         );
         setBroadcastHistory(updatedHistory);
     
-        // Também recarrega o histórico mais atualizado após a mudança
-        fetchBroadcastHistory();
+        // Atualiza o histórico de maneira eficiente, recarregando do Firestore
+        fetchBroadcastHistory(); // Garante que o histórico reflita as atualizações do Firestore
       } else {
         alert("Erro ao cancelar agendamento recorrente.");
       }
     };
+    
     
 
     if (activeTab === "telegram" && telegramTokenRef.current?.value) {
