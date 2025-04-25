@@ -572,3 +572,4 @@ async def broadcast_history(phone: str, limit: int = Query(default=100, lte=100)
             content={"detail": f"Erro ao buscar histórico: {str(e)}"},
         )
 
+

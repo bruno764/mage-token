@@ -310,33 +310,72 @@ const totalPages = Math.ceil(broadcastHistory.length / itemsPerPage);
       return alert("⚠️ Nenhum destinatário válido encontrado.");
     }
   
-    // ✅ Converte para UTC
-    const utcScheduledAt = new Date(scheduledAt).toISOString();
     const token = await auth.currentUser.getIdToken();
-  
     const formData = new FormData();
     formData.append("phone", phone);
     formData.append("message", message);
     formData.append("recipients", allRecipients.join(","));
-    formData.append("send_at", utcScheduledAt); // 👈 aqui vai em UTC
+    formData.append("send_at", new Date(scheduledAt).toISOString()); // UTC
+  
     if (file) formData.append("file", file);
   
-    const res = await fetch(`${API_URL}/schedule-broadcast`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${token}` // 🔐 ADICIONE ISSO
-      },
-      body: formData,
-    });
-    const result = await res.json();
-    if (result.job_id) {
-      alert(`⏰ Envio agendado para ${new Date(scheduledAt).toLocaleString()}`);
-      setScheduledAt("");
-    } else {
-      alert(result.detail || result.error);
+    // 👇 se for recorrente, adiciona o cron
+    if (isRecurring) {
+      if (!cron.trim()) {
+        return alert("⚠️ Campo CRON obrigatório para envios recorrentes.");
+      }
+      formData.append("cron", cron);
+    }
+  
+    // 👇 endpoint muda de acordo com o tipo
+    const endpoint = isRecurring ? "schedule-recurring" : "schedule-broadcast";
+  
+    try {
+      const res = await fetch(`${API_URL}/${endpoint}`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: formData,
+      });
+  
+      const result = await res.json();
+  
+      if (res.ok) {
+        if (isRecurring) {
+          alert("🔁 Envio recorrente agendado com sucesso!");
+        } else {
+          alert(`⏰ Envio agendado para ${new Date(scheduledAt).toLocaleString()}`);
+          setScheduledAt("");
+        }
+      } else {
+        alert(result.detail || result.error);
+      }
+    } catch (err) {
+      alert("Erro ao agendar envio.");
     }
   };
   
+  <div className="mt-2">
+  <label className="flex items-center gap-2 text-white text-sm">
+    <input
+      type="checkbox"
+      checked={isRecurring}
+      onChange={(e) => setIsRecurring(e.target.checked)}
+    />
+    🔁 Tornar este envio recorrente?
+  </label>
+  {isRecurring && (
+    <input
+      type="text"
+      value={cron}
+      onChange={(e) => setCron(e.target.value)}
+      placeholder="Cron (ex: 0 7 * * *)"
+      className="w-full p-2 mt-1 rounded bg-gray-800 text-white"
+    />
+  )}
+</div>
+
 
   const handleEnviarCodigo = async () => {
     const phone = telegramTokenRef.current.value;
