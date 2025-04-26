@@ -107,11 +107,10 @@ RUN if [ "$RAILS_ENV" = "production" ]; then \
 RUN git rev-parse HEAD > /app/.git_sha 2>/dev/null || \
     echo "no-git-sha" > /app/.git_sha
 
-# Limpa caches e arquivos desnecessários
-RUN rm -rf /gems/ruby/3.3.0/cache/*.gem \
-  && find /gems/ruby/3.3.0/gems/ \( -name "*.c" -o -name "*.o" \) -delete \
-  && rm -rf .git \
+# Limpa arquivos de Git e .gitignore
+RUN rm -rf .git \
   && rm .gitignore
+
 
 # Stage final: imagem enxuta de produção
 FROM ruby:3.3.3-alpine3.19
