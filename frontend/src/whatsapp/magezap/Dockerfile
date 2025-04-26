@@ -24,8 +24,7 @@ ENV RAILS_ENV ${RAILS_ENV}
 ARG NODE_OPTIONS="--max-old-space-size=4096 --openssl-legacy-provider"
 ENV NODE_OPTIONS ${NODE_OPTIONS}
 
-# Pasta padrão de gems
-ENV BUNDLE_PATH="/gems"
+
 
 # Instala runtime mínimo de SO e bundler
 RUN apk update && apk add --no-cache \
@@ -65,11 +64,16 @@ WORKDIR /app
 # Instala gems (sem dev/test em production)
 COPY Gemfile Gemfile.lock ./
 RUN if [ "$RAILS_ENV" = "production" ]; then \
-      bundle config set without 'development test'; \
-      bundle install -j 4 --retry 3; \
+      bundle install --jobs 4 --retry 3 --deployment --without development test; \
     else \
-      bundle install -j 4 --retry 3; \
+      bundle install --jobs 4 --retry 3; \
     fi
+
+    # Copia o Gemfile e Gemfile.lock
+COPY Gemfile Gemfile.lock ./
+
+# Instala os gems em modo deployment, dentro de vendor/bundle
+RUN bundle install --jobs 4 --retry 3 --deployment --without development test
 
 # Instala dependências nativas (incluindo vips via edge/community)
 RUN apk update && apk add --no-cache \
@@ -133,7 +137,6 @@ ENV BUNDLE_FORCE_RUBY_PLATFORM ${BUNDLE_FORCE_RUBY_PLATFORM}
 ARG RAILS_ENV=production
 ENV RAILS_ENV ${RAILS_ENV}
 
-ENV BUNDLE_PATH="/gems"
 
 # Instala runtime de produção
 RUN apk update && apk add --no-cache \
