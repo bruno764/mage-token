@@ -163,7 +163,10 @@ COPY --from=pre-builder /app /app
 COPY --from=pre-builder /app/.git_sha /app/.git_sha
 
 WORKDIR /app
+# Garante permissão de execução para os binstubs Rails
+RUN chmod +x /app/bin/rails /app/bin/rake
 
 EXPOSE 3000
 
 CMD ["bin/rails", "server", "-b", "0.0.0.0", "-p", "3000"]
+
