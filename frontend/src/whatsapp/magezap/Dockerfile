@@ -59,27 +59,18 @@ RUN echo 'export PNPM_HOME="/root/.local/share/pnpm"' >> /root/.shrc \
 ENV PNPM_HOME="/root/.local/share/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
 
-# Garante que o container final enxergue os binstubs
-ENV PATH="/app/bin:/app/vendor/bundle/ruby/3.3.0/bin:$PATH"
-
 WORKDIR /app
 
-# configura o Bundler para deployment em vendor/bundle e gera .bundle/config
-WORKDIR /app
-
-# 1) copia o Gemfile e o Gemfile.lock
+# 1) copia definições de gems
 COPY Gemfile Gemfile.lock ./
 
-# 2) gera o .bundle/config e instala gems (incluindo git-sourced)
-RUN bundle config set deployment 'true' && \
-    bundle config set path 'vendor/bundle' && \
-    bundle config set bin 'bin' && \
-    bundle config set without 'development test' && \
-    bundle install --jobs 4 --retry 3
-
-    # expõe os executáveis em bin/ e vendor/bundle
-ENV PATH="/app/bin:/app/vendor/bundle/ruby/3.3.0/bin:$PATH"
-
+# 2) configura o Bundler para deployment em vendor/bundle
+#    e instala TODOS os gems (rubygems + git-sourced)
+RUN bundle config set deployment 'true' \
+ && bundle config set path 'vendor/bundle' \
+ && bundle config set bin 'bin' \
+ && bundle config set without 'development test' \
+ && bundle install --jobs 4 --retry 3
 
 # Instala dependências nativas (incluindo vips via edge/community)
 RUN apk update && apk add --no-cache \
