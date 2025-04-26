@@ -99,8 +99,9 @@ RUN if [ "$RAILS_ENV" = "production" ]; then \
       rm -rf spec node_modules tmp/cache; \
     fi
 
-# Grava o SHA do commit
-RUN git rev-parse HEAD > /app/.git_sha
+# Grava o SHA do commit (fallback quando não houver .git)
+RUN git rev-parse HEAD > /app/.git_sha 2>/dev/null || \
+    echo "no-git-sha" > /app/.git_sha
 
 # Limpa caches e arquivos desnecessários
 RUN rm -rf /gems/ruby/3.3.0/cache/*.gem \
