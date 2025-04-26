@@ -1,0 +1,2 @@
+*.onnx filter=lfs diff=lfs merge=lfs -text
+frontend/src/whatsapp/vendor/db/sentiment-analysis.onnx filter=lfs diff=lfs merge=lfs -text
