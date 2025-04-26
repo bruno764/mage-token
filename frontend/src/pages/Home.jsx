@@ -96,13 +96,23 @@ const totalPages = Math.ceil(broadcastHistory.length / itemsPerPage);
           },
         });
         const json = await res.json();
-        console.log("Histórico carregado: ", json.items);  // Verifique os dados retornados
-        setBroadcastHistory(json.items || []); // Atualiza com os dados mais recentes
+    
+        // Verifica se o status do item foi alterado para 'Cancelado' no Firestore
+        const updatedHistory = json.items.map((item) => {
+          if (item.status === "Cancelado") {
+            return { ...item, active: false };  // Garantir que o item esteja marcado como 'Cancelado'
+          }
+          return item;
+        });
+    
+        console.log("Histórico carregado: ", updatedHistory);  // Verifique os dados retornados
+        setBroadcastHistory(updatedHistory || []); // Atualiza com os dados mais recentes
       } catch (err) {
         console.error("Erro ao buscar histórico:", err);
         alert("Erro ao buscar histórico de envios.");
       }
     };
+    
     
     
     // Função para cancelar o envio recorrente e atualizar o estado
@@ -675,18 +685,17 @@ formData.append("cron", finalCron);
             </div>
 
             <p className="text-sm text-gray-400">
-  <strong>{item.cron ? "Próxima execução:" : "Agendado para:"}</strong>{" "}
-  {item.cron && item.next_run
-    ? new Date(
-        item.next_run._seconds
-          ? item.next_run._seconds * 1000
-          : Date.parse(item.next_run)
-      ).toLocaleString("pt-BR")
-    : item.send_at?._seconds
-    ? new Date(item.send_at._seconds * 1000).toLocaleString("pt-BR")
-    : "Data inválida"}
-</p>
-
+              <strong>{item.cron ? "Próxima execução:" : "Agendado para:"}</strong>{" "}
+              {item.cron && item.next_run
+                ? new Date(
+                    item.next_run._seconds
+                      ? item.next_run._seconds * 1000
+                      : Date.parse(item.next_run)
+                  ).toLocaleString("pt-BR")
+                : item.send_at?._seconds
+                ? new Date(item.send_at._seconds * 1000).toLocaleString("pt-BR")
+                : "Data inválida"}
+            </p>
 
             <div className="mt-2 text-sm">
               <span className="text-green-400 mr-4">✔️ Sucesso: {successCount}</span>
@@ -711,10 +720,13 @@ formData.append("cron", finalCron);
                   // Atualiza o histórico com status 'Cancelado'
                   const updatedHistory = broadcastHistory.map((historyItem) =>
                     historyItem.id === item.id
-                      ? { ...historyItem, status: "recurring", active: false }
+                      ? { ...historyItem, status: "Cancelado", active: false }
                       : historyItem
                   );
                   setBroadcastHistory(updatedHistory);
+
+                  // Recarrega o histórico mais recente para refletir o estado do Firestore
+                  fetchBroadcastHistory();
                 }}
               >
                 ❌ Cancelar Envio Recorrente
@@ -747,6 +759,7 @@ formData.append("cron", finalCron);
     </div>
   </div>
 )}
+
 
 
 
