@@ -61,17 +61,22 @@ ENV PATH="$PNPM_HOME:$PATH"
 
 WORKDIR /app
 
-# 1) copia apenas as definições de gems
+# 2.1) força Bundler a usar /app/.bundle para configs locais
+ENV BUNDLE_APP_CONFIG="/app/.bundle"
+RUN mkdir -p /app/.bundle
+
+# 2.2) copia só Gemfile e Gemfile.lock
 COPY Gemfile Gemfile.lock ./
 
-# 2) configura o Bundler para instalar TUDO em vendor/bundle E gerar os binstubs em bin/
+# 2.3) configura Bundler e instala TUDO em vendor/bundle
 RUN bundle config set --local path 'vendor/bundle'       \
  && bundle config set --local bin 'bin'                  \
  && bundle config set --local without 'development test' \
  && bundle install --jobs 4 --retry 3
 
-# garante que os executáveis do binstub e vendor/bundle fiquem no PATH
+# 2.4) expõe os executáveis do binstub e das gems
 ENV PATH="/app/bin:/app/vendor/bundle/ruby/3.3.0/bin:$PATH"
+
 
 # Instala dependências nativas (incluindo vips via edge/community)
 RUN apk update && apk add --no-cache \
@@ -93,11 +98,8 @@ RUN mkdir -p /app/log
 
 # Etapa de pré-compilação de assets (exibe versões e usa --trace)
 RUN if [ "$RAILS_ENV" = "production" ]; then \
-      echo "→ Node: $(node --version)"; \
-      echo "→ PNPM: $(pnpm --version)"; \
-      SECRET_KEY_BASE=precompile_placeholder \
-        RAILS_LOG_TO_STDOUT=enabled \
-        bundle exec rake assets:precompile --trace; \
+      SECRET_KEY_BASE=precompile_placeholder RAILS_LOG_TO_STDOUT=enabled \
+      bundle exec rake assets:precompile --trace; \
       rm -rf spec node_modules tmp/cache; \
     fi
 
@@ -165,15 +167,15 @@ COPY --from=pre-builder /app /app
 COPY --from=pre-builder /app/.git_sha /app/.git_sha
 
 WORKDIR /app
-# garante que o Bundler use /app/.bundle como local de config
-ENV BUNDLE_APP_CONFIG="/app/.bundle"
-RUN mkdir -p /app/.bundle
 
+# 3.1) traga tudo do pre-builder (app + vendor/bundle + .bundle/config + bin/)
+COPY --from=pre-builder /app /app
 
-# Garante permissão de execução para os binstubs Rails
+# 3.2) certifique-se de que os binstubs são executáveis
 RUN chmod +x /app/bin/rails /app/bin/rake
 
+# 3.3) PATH para os binstubs
+ENV PATH="/app/bin:/app/vendor/bundle/ruby/3.3.0/bin:$PATH"
+
 EXPOSE 3000
-
-CMD ["bin/rails", "server", "-b", "0.0.0.0", "-p", "3000"]
-
+CMD ["bin/rails","server","-b","0.0.0.0","-p","3000"]
