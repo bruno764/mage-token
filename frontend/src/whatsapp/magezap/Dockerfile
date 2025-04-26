@@ -160,8 +160,7 @@ RUN if [ "$RAILS_ENV" != "production" ]; then \
       && pnpm --version; \
     fi
 
-# Copia gems e app pré-compilados do pre-builder
-COPY --from=pre-builder /gems/ /gems/
+# Copia app pré-compilados do pre-builder
 COPY --from=pre-builder /app /app
 
 # Copia .git_sha
