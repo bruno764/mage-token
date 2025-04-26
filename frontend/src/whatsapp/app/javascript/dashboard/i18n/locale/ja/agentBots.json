@@ -1,0 +1,73 @@
+{
+  "AGENT_BOTS": {
+    "HEADER": "ボット",
+    "LOADING_EDITOR": "エディターを読み込んでいます...",
+    "DESCRIPTION": "Agent Bots are like the most fabulous members of your team. They can handle the small stuff, so you can focus on the stuff that matters. Give them a try.You can manage your bots from this page or create new ones using the 'Configure new bot' button.",
+    "LEARN_MORE": "Learn about agent bots",
+    "CSML_BOT_EDITOR": {
+      "NAME": {
+        "LABEL": "ボット名",
+        "PLACEHOLDER": "ボットに名前を付けてください。",
+        "ERROR": "ボット名は必須です。"
+      },
+      "DESCRIPTION": {
+        "LABEL": "ボットの説明",
+        "PLACEHOLDER": "このボットは何をしますか？"
+      },
+      "BOT_CONFIG": {
+        "ERROR": "上記にCSMLボット設定を入力してください。",
+        "API_ERROR": "CSML設定が無効です。修正して再試行してください。"
+      },
+      "SUBMIT": "検証して保存"
+    },
+    "BOT_CONFIGURATION": {
+      "TITLE": "エージェントボットを選択",
+      "DESC": "エージェントボットを受信トレイに割り当てます。初期の会話を処理し、必要に応じてライブエージェントに転送することができます。",
+      "SUBMIT": "更新",
+      "DISCONNECT": "ボットを切断",
+      "SUCCESS_MESSAGE": "エージェントボットが正常に更新されました。",
+      "DISCONNECTED_SUCCESS_MESSAGE": "エージェントボットが正常に切断されました。",
+      "ERROR_MESSAGE": "エージェントボットを更新できませんでした。再試行してください。",
+      "DISCONNECTED_ERROR_MESSAGE": "エージェントボットを切断できませんでした。再試行してください。",
+      "SELECT_PLACEHOLDER": "ボットを選択"
+    },
+    "ADD": {
+      "TITLE": "新しいボットを設定",
+      "CANCEL_BUTTON_TEXT": "キャンセル",
+      "API": {
+        "SUCCESS_MESSAGE": "ボットが正常に追加されました。",
+        "ERROR_MESSAGE": "ボットを追加できませんでした。後でもう一度お試しください。"
+      }
+    },
+    "LIST": {
+      "404": "ボットが見つかりません。\"新しいボットを設定\" ボタンをクリックしてボットを作成できます↗",
+      "LOADING": "ボットを取得中...",
+      "TYPE": "ボットタイプ"
+    },
+    "DELETE": {
+      "BUTTON_TEXT": "削除",
+      "TITLE": "ボットを削除",
+      "SUBMIT": "削除",
+      "CANCEL_BUTTON_TEXT": "キャンセル",
+      "DESCRIPTION": "本当にこのボットを削除しますか？この操作は元に戻せません。",
+      "API": {
+        "SUCCESS_MESSAGE": "ボットが正常に削除されました。",
+        "ERROR_MESSAGE": "ボットを削除できませんでした。再試行してください。"
+      }
+    },
+    "EDIT": {
+      "BUTTON_TEXT": "編集",
+      "LOADING": "ボットを取得中...",
+      "TITLE": "ボットを編集",
+      "CANCEL_BUTTON_TEXT": "キャンセル",
+      "API": {
+        "SUCCESS_MESSAGE": "ボットが正常に更新されました。",
+        "ERROR_MESSAGE": "ボットを更新できませんでした。再試行してください。"
+      }
+    },
+    "TYPES": {
+      "WEBHOOK": "Webhookボット",
+      "CSML": "CSMLボット"
+    }
+  }
+}

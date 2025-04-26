@@ -1,0 +1,73 @@
+{
+  "AGENT_BOTS": {
+    "HEADER": "الروبوتات",
+    "LOADING_EDITOR": "جار جلب المحرر...",
+    "DESCRIPTION": "Agent Bots are like the most fabulous members of your team. They can handle the small stuff, so you can focus on the stuff that matters. Give them a try.You can manage your bots from this page or create new ones using the 'Configure new bot' button.",
+    "LEARN_MORE": "Learn about agent bots",
+    "CSML_BOT_EDITOR": {
+      "NAME": {
+        "LABEL": "اسم الروبوت",
+        "PLACEHOLDER": "قم بتسمية الروبوت الخاص بك.",
+        "ERROR": "اسم الروبوت مطلوب."
+      },
+      "DESCRIPTION": {
+        "LABEL": "وصف الروبوت",
+        "PLACEHOLDER": "ماذا يفعل هذا الروبوت؟"
+      },
+      "BOT_CONFIG": {
+        "ERROR": "يرجى إدخال تكوين نبوت CSML الخاص بك أعلاه.",
+        "API_ERROR": "تكوين CSML الخاص بك غير صالح. يرجى إصلاحه والمحاولة مرة أخرى."
+      },
+      "SUBMIT": "التحقق والحفظ"
+    },
+    "BOT_CONFIGURATION": {
+      "TITLE": "اختر الروبوت",
+      "DESC": "قم بتعيين روبوت لصندوق الوارد الخاص بك. يمكنهم التعامل مع المحادثات الأولية ونقلها إلى وكيل مباشر عند الضرورة.",
+      "SUBMIT": "تحديث",
+      "DISCONNECT": "قطع اتصال الروبوت",
+      "SUCCESS_MESSAGE": "تم تحديث الروبوت بنجاح.",
+      "DISCONNECTED_SUCCESS_MESSAGE": "تم فصل الروبوت بنجاح.",
+      "ERROR_MESSAGE": "تعذر تحديث الروبوت. يرجى المحاولة مرة أخرى.",
+      "DISCONNECTED_ERROR_MESSAGE": "تعذر فصل الروبوت. يرجى المحاولة مرة أخرى.",
+      "SELECT_PLACEHOLDER": "اختر الروبوت"
+    },
+    "ADD": {
+      "TITLE": "تكوين روبوت جديد",
+      "CANCEL_BUTTON_TEXT": "إلغاء",
+      "API": {
+        "SUCCESS_MESSAGE": "تمت إضافة الروبوت بنجاح.",
+        "ERROR_MESSAGE": "تعذر إضافة الروبوت. يرجى المحاولة مرة أخرى لاحقًا."
+      }
+    },
+    "LIST": {
+      "404": "لم يتم العثور على أي روبوتات. يمكنك إنشاء الروبوت بالنقر على زر 'تكوين روبوت جديد' ↗",
+      "LOADING": "جار جلب الروبوتات...",
+      "TYPE": "نوع الروبوت"
+    },
+    "DELETE": {
+      "BUTTON_TEXT": "حذف",
+      "TITLE": "حذف الروبوت",
+      "SUBMIT": "حذف",
+      "CANCEL_BUTTON_TEXT": "إلغاء",
+      "DESCRIPTION": "هل أنت متأكد أنك تريد حذف هذا الروبوت؟ هذا الإجراء لا يمكن التراجع عنه.",
+      "API": {
+        "SUCCESS_MESSAGE": "تم حذف الروبوت بنجاح.",
+        "ERROR_MESSAGE": "تعذر حذف الروبوت. يرجى المحاولة مرة أخرى."
+      }
+    },
+    "EDIT": {
+      "BUTTON_TEXT": "تعديل",
+      "LOADING": "جار جلب الروبوتات...",
+      "TITLE": "تعديل الروبوت",
+      "CANCEL_BUTTON_TEXT": "إلغاء",
+      "API": {
+        "SUCCESS_MESSAGE": "تم تحديث الروبوت بنجاح.",
+        "ERROR_MESSAGE": "تعذر تحديث الروبوت. يرجى المحاولة مرة أخرى."
+      }
+    },
+    "TYPES": {
+      "WEBHOOK": "روبوت الـWebhook",
+      "CSML": "بوت CSML"
+    }
+  }
+}

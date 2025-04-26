@@ -1,0 +1,73 @@
+{
+  "AGENT_BOTS": {
+    "HEADER": "Botlar",
+    "LOADING_EDITOR": "Editör Yükleniyor...",
+    "DESCRIPTION": "Agent Bots are like the most fabulous members of your team. They can handle the small stuff, so you can focus on the stuff that matters. Give them a try.You can manage your bots from this page or create new ones using the 'Configure new bot' button.",
+    "LEARN_MORE": "Learn about agent bots",
+    "CSML_BOT_EDITOR": {
+      "NAME": {
+        "LABEL": "Bot Adı",
+        "PLACEHOLDER": "Botunuza bir ad verin.",
+        "ERROR": "Bot adı zorunludur."
+      },
+      "DESCRIPTION": {
+        "LABEL": "Bot açıklaması",
+        "PLACEHOLDER": "Bu bot ne iş yapar?"
+      },
+      "BOT_CONFIG": {
+        "ERROR": "Lütfen yukarıdaki bot yapılandırmanızı girin.",
+        "API_ERROR": "CSML yapılandırmanız geçersiz. Lütfen düzeltin ve tekrar deneyin."
+      },
+      "SUBMIT": "Doğrula ve kaydet"
+    },
+    "BOT_CONFIGURATION": {
+      "TITLE": "Bir temsilci botu seçin",
+      "DESC": "Gelen kutunuza bir temsilci Botu atayın. Küçük konuşmaları ele alabilir ve gerekli olduğunda canlı bir temsilciın devralmasını sağlayabilirler.",
+      "SUBMIT": "Güncelle",
+      "DISCONNECT": "Botu bağlantısını kes",
+      "SUCCESS_MESSAGE": "Temsilci botu başarıyla güncellendi.",
+      "DISCONNECTED_SUCCESS_MESSAGE": "Temsilci botu başarıyla bağlantısı kesildi.",
+      "ERROR_MESSAGE": "Temsilci botu güncellenemedi. Lütfen tekrar deneyin.",
+      "DISCONNECTED_ERROR_MESSAGE": "Temsilci botu bağlantısı kesilemedi. Lütfen tekrar deneyin.",
+      "SELECT_PLACEHOLDER": "Bot seçin"
+    },
+    "ADD": {
+      "TITLE": "Yeni botu yapılandır",
+      "CANCEL_BUTTON_TEXT": "İptal Et",
+      "API": {
+        "SUCCESS_MESSAGE": "Bot başarıyla eklendi.",
+        "ERROR_MESSAGE": "Bot eklenemedi. Lütfen daha sonra tekrar deneyin."
+      }
+    },
+    "LIST": {
+      "404": "Bot bulunamadı. 'Yeni botu yapılandır' düğmesine tıklayarak bir bot oluşturabilirsiniz ↗",
+      "LOADING": "Botlar alınıyor...",
+      "TYPE": "Bot türü"
+    },
+    "DELETE": {
+      "BUTTON_TEXT": "Sil",
+      "TITLE": "Botu sil",
+      "SUBMIT": "Sil",
+      "CANCEL_BUTTON_TEXT": "İptal Et",
+      "DESCRIPTION": "Bu botu silmek istediğinize emin misiniz? Bu işlem geri alınamaz.",
+      "API": {
+        "SUCCESS_MESSAGE": "Bot başarıyla silindi.",
+        "ERROR_MESSAGE": "Bot silinemedi. Lütfen tekrar deneyin."
+      }
+    },
+    "EDIT": {
+      "BUTTON_TEXT": "Düzenle",
+      "LOADING": "Botlar alınıyor...",
+      "TITLE": "Botu düzenle",
+      "CANCEL_BUTTON_TEXT": "İptal Et",
+      "API": {
+        "SUCCESS_MESSAGE": "Bot başarıyla güncellendi.",
+        "ERROR_MESSAGE": "Bot güncellenemedi. Lütfen tekrar deneyin."
+      }
+    },
+    "TYPES": {
+      "WEBHOOK": "Webhook botu",
+      "CSML": "CSML botu"
+    }
+  }
+}

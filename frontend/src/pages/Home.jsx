@@ -1120,11 +1120,12 @@ formData.append("cron", finalCron);
           Telegram
         </button>
         <button
-          onClick={() => setActiveTab("whatsapp")}
-          className="w-full bg-gray-800 hover:bg-green-600 py-2 rounded"
-        >
-          WhatsApp
-        </button>
+  onClick={() => window.open("/whatsapp", "_blank")}
+  className="w-full bg-gray-800 hover:bg-green-600 py-2 rounded"
+>
+  WhatsApp
+</button>
+
         <button
           onClick={() => setActiveTab("facebook")}
           className="w-full bg-gray-800 hover:bg-blue-600 py-2 rounded"

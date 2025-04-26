@@ -1,0 +1,73 @@
+{
+  "AGENT_BOTS": {
+    "HEADER": "Boti",
+    "LOADING_EDITOR": "Nalaganje urejevalnika ...",
+    "DESCRIPTION": "Agent Bots are like the most fabulous members of your team. They can handle the small stuff, so you can focus on the stuff that matters. Give them a try.You can manage your bots from this page or create new ones using the 'Configure new bot' button.",
+    "LEARN_MORE": "Learn about agent bots",
+    "CSML_BOT_EDITOR": {
+      "NAME": {
+        "LABEL": "Ime bota",
+        "PLACEHOLDER": "Poimenujte svojega bota.",
+        "ERROR": "Zahtevano je ime bota."
+      },
+      "DESCRIPTION": {
+        "LABEL": "Opis bota",
+        "PLACEHOLDER": "Kaj počne ta bot?"
+      },
+      "BOT_CONFIG": {
+        "ERROR": "Zgoraj vnesite svojo konfiguracijo bota CSML.",
+        "API_ERROR": "Vaša konfiguracija CSML je neveljavna. Popravite jo in poskusite znova."
+      },
+      "SUBMIT": "Preveri in shrani"
+    },
+    "BOT_CONFIGURATION": {
+      "TITLE": "Izberite agentskega bota",
+      "DESC": "Dodelite Agentskega Bota v svoj nabiralnik. Ti lahko vodijo začetne pogovore in jih po potrebi prenesejo na agenta v živo.",
+      "SUBMIT": "Posodobi",
+      "DISCONNECT": "Odklopi bota",
+      "SUCCESS_MESSAGE": "Agentski bot je bil uspešno posodobljen.",
+      "DISCONNECTED_SUCCESS_MESSAGE": "Povezava z agentskega bota je bila uspešno prekinjena.",
+      "ERROR_MESSAGE": "Agentskega bota ni bilo mogoče posodobiti. Prosimo poskusite ponovno.",
+      "DISCONNECTED_ERROR_MESSAGE": "Ni bilo mogoče prekiniti povezave z agentskim botom. Prosimo poskusite ponovno.",
+      "SELECT_PLACEHOLDER": "Izberi bota"
+    },
+    "ADD": {
+      "TITLE": "Konfigurirajte novega bota",
+      "CANCEL_BUTTON_TEXT": "Prekliči",
+      "API": {
+        "SUCCESS_MESSAGE": "Bot je bil uspešno dodan.",
+        "ERROR_MESSAGE": "Bota ni bilo mogoče dodati. Poskusite znova pozneje."
+      }
+    },
+    "LIST": {
+      "404": "Botov ni bilo mogoče najti. Bota lahko ustvarite s klikom na gumb 'Konfigurirajte novega bota' ↗",
+      "LOADING": "Pridobivanje botov ...",
+      "TYPE": "Vrsta bota"
+    },
+    "DELETE": {
+      "BUTTON_TEXT": "Izbriši",
+      "TITLE": "Izbriši bota",
+      "SUBMIT": "Izbriši",
+      "CANCEL_BUTTON_TEXT": "Prekliči",
+      "DESCRIPTION": "Ali ste prepričani, da želite izbrisati tega bota? To dejanje ni mogoče preklicati.",
+      "API": {
+        "SUCCESS_MESSAGE": "Bot uspešno izbrisan.",
+        "ERROR_MESSAGE": "Bota ni bilo mogoče izbrisati. Prosimo poskusite ponovno."
+      }
+    },
+    "EDIT": {
+      "BUTTON_TEXT": "Uredi",
+      "LOADING": "Pridobivanje botov ...",
+      "TITLE": "Uredi bota",
+      "CANCEL_BUTTON_TEXT": "Prekliči",
+      "API": {
+        "SUCCESS_MESSAGE": "Bot je bil uspešno posodobljen.",
+        "ERROR_MESSAGE": "Bota ni bilo mogoče posodobiti. Prosimo poskusite ponovno."
+      }
+    },
+    "TYPES": {
+      "WEBHOOK": "Webhook bot",
+      "CSML": "CSML bot"
+    }
+  }
+}
