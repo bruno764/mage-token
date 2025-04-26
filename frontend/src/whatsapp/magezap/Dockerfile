@@ -67,10 +67,9 @@ WORKDIR /app
 # Copia Gemfile e Gemfile.lock
 COPY Gemfile Gemfile.lock ./
 
-## Instala todos os gems em vendor/bundle, sem development/test
+# Instala todos os gems em vendor/bundle, sem development/test
 RUN bundle install --jobs 4 --retry 3 \
     --deployment --without development test
-    CMD ["bundle", "exec", "rails", "s", "-b", "0.0.0.0", "-p", "3000"]
 
 # Instala dependências nativas (incluindo vips via edge/community)
 RUN apk update && apk add --no-cache \
