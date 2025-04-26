@@ -61,16 +61,17 @@ ENV PATH="$PNPM_HOME:$PATH"
 
 WORKDIR /app
 
-# 1) copia definições de gems
+# 1) copia apenas as definições de gems
 COPY Gemfile Gemfile.lock ./
 
-# 2) configura o Bundler para deployment em vendor/bundle
-#    e instala TODOS os gems (rubygems + git-sourced)
-RUN bundle config set deployment 'true' \
- && bundle config set path 'vendor/bundle' \
- && bundle config set bin 'bin' \
- && bundle config set without 'development test' \
+# 2) configura o Bundler para instalar TUDO em vendor/bundle E gerar os binstubs em bin/
+RUN bundle config set --local path 'vendor/bundle'       \
+ && bundle config set --local bin 'bin'                  \
+ && bundle config set --local without 'development test' \
  && bundle install --jobs 4 --retry 3
+
+# garante que os executáveis do binstub e vendor/bundle fiquem no PATH
+ENV PATH="/app/bin:/app/vendor/bundle/ruby/3.3.0/bin:$PATH"
 
 # Instala dependências nativas (incluindo vips via edge/community)
 RUN apk update && apk add --no-cache \
@@ -164,7 +165,10 @@ COPY --from=pre-builder /app /app
 COPY --from=pre-builder /app/.git_sha /app/.git_sha
 
 WORKDIR /app
-ENV PATH="/app/bin:/app/vendor/bundle/ruby/3.3.0/bin:$PATH"
+# garante que o Bundler use /app/.bundle como local de config
+ENV BUNDLE_APP_CONFIG="/app/.bundle"
+RUN mkdir -p /app/.bundle
+
 
 # Garante permissão de execução para os binstubs Rails
 RUN chmod +x /app/bin/rails /app/bin/rake
