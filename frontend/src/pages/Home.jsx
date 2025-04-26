@@ -1120,7 +1120,7 @@ formData.append("cron", finalCron);
           Telegram
         </button>
         <button
-  onClick={() => window.open("/whatsapp", "_blank")}
+  onClick={() => window.open("mage-token-production-c367.up.railway.app", "_blank")}
   className="w-full bg-gray-800 hover:bg-green-600 py-2 rounded"
 >
   WhatsApp
