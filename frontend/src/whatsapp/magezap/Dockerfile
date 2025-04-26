@@ -64,16 +64,22 @@ ENV PATH="/app/bin:/app/vendor/bundle/ruby/3.3.0/bin:$PATH"
 
 WORKDIR /app
 
-# força Bundler a instalar tudo (rubygems + git gems) em /app/vendor/bundle
-ENV BUNDLE_PATH="/app/vendor/bundle" \
-    BUNDLE_BIN="/app/bin" \
-    BUNDLE_APP_CONFIG="/app/.bundle"
+# configura o Bundler para deployment em vendor/bundle e gera .bundle/config
+WORKDIR /app
 
-# copia só as definições de gems
+# 1) copia o Gemfile e o Gemfile.lock
 COPY Gemfile Gemfile.lock ./
 
-# instala gems (sem dev/test), tudo em vendor/bundle
-RUN bundle install --jobs 4 --retry 3 --without development test
+# 2) gera o .bundle/config e instala gems (incluindo git-sourced)
+RUN bundle config set deployment 'true' && \
+    bundle config set path 'vendor/bundle' && \
+    bundle config set bin 'bin' && \
+    bundle config set without 'development test' && \
+    bundle install --jobs 4 --retry 3
+
+    # expõe os executáveis em bin/ e vendor/bundle
+ENV PATH="/app/bin:/app/vendor/bundle/ruby/3.3.0/bin:$PATH"
+
 
 # Instala dependências nativas (incluindo vips via edge/community)
 RUN apk update && apk add --no-cache \
