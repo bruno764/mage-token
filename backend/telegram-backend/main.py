@@ -632,8 +632,12 @@ async def cancel_recurring(job_id: str = Form(...), current_uid: str = Depends(g
             "status": "Cancelado",  # Atualiza o status no Firestore
         })
 
-        # Remove o job do agendador para que ele não execute mais
-        scheduler.remove_job(job_id)
+        # Verifica se o job existe no agendador antes de tentar removê-lo
+        job = scheduler.get_job(job_id)
+        if job:
+            scheduler.remove_job(job_id)
+        else:
+            print(f"⚠️ Job {job_id} não encontrado no agendador")
 
         # Retorna o status de sucesso
         return {"status": "Agendamento recorrente cancelado", "job_id": job_id}
@@ -641,4 +645,5 @@ async def cancel_recurring(job_id: str = Form(...), current_uid: str = Depends(g
     except Exception as e:
         print(f"Erro ao cancelar agendamento: {e}")
         raise HTTPException(status_code=500, detail="Erro ao cancelar agendamento.")
+
 

@@ -132,7 +132,7 @@ const totalPages = Math.ceil(broadcastHistory.length / itemsPerPage);
       if (res.ok) {
         alert("Agendamento recorrente cancelado.");
     
-        // Atualiza o histórico com status 'Cancelado' localmente
+        // Atualiza o histórico com status 'Cancelado'
         const updatedHistory = broadcastHistory.map((historyItem) =>
           historyItem.id === itemId
             ? { ...historyItem, status: "Cancelado", active: false }
@@ -141,11 +141,12 @@ const totalPages = Math.ceil(broadcastHistory.length / itemsPerPage);
         setBroadcastHistory(updatedHistory);
     
         // Recarrega o histórico mais recente para refletir o estado do Firestore
-        fetchBroadcastHistory();  // Garante que o histórico reflita as atualizações no Firestore
+        fetchBroadcastHistory();
       } else {
         alert("Erro ao cancelar agendamento recorrente.");
       }
     };
+    
     
     
     
