@@ -130,12 +130,13 @@ const totalPages = Math.ceil(broadcastHistory.length / itemsPerPage);
         );
         setBroadcastHistory(updatedHistory);
     
-        // Atualiza o histórico de maneira eficiente, recarregando do Firestore
-        fetchBroadcastHistory(); // Garante que o histórico reflita as atualizações do Firestore
+        // Recarrega o histórico mais recente para refletir o estado do Firestore
+        fetchBroadcastHistory();  // Garante que o histórico reflita as atualizações no Firestore
       } else {
         alert("Erro ao cancelar agendamento recorrente.");
       }
     };
+    
     
     
 
