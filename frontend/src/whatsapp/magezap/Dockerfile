@@ -64,12 +64,16 @@ ENV PATH="/app/bin:/app/vendor/bundle/ruby/3.3.0/bin:$PATH"
 
 WORKDIR /app
 
-# Copia Gemfile e Gemfile.lock
+# força Bundler a instalar tudo (rubygems + git gems) em /app/vendor/bundle
+ENV BUNDLE_PATH="/app/vendor/bundle" \
+    BUNDLE_BIN="/app/bin" \
+    BUNDLE_APP_CONFIG="/app/.bundle"
+
+# copia só as definições de gems
 COPY Gemfile Gemfile.lock ./
 
-# Instala todos os gems em vendor/bundle, sem development/test
-RUN bundle install --jobs 4 --retry 3 \
-    --deployment --without development test
+# instala gems (sem dev/test), tudo em vendor/bundle
+RUN bundle install --jobs 4 --retry 3 --without development test
 
 # Instala dependências nativas (incluindo vips via edge/community)
 RUN apk update && apk add --no-cache \
@@ -163,6 +167,8 @@ COPY --from=pre-builder /app /app
 COPY --from=pre-builder /app/.git_sha /app/.git_sha
 
 WORKDIR /app
+ENV PATH="/app/bin:/app/vendor/bundle/ruby/3.3.0/bin:$PATH"
+
 # Garante permissão de execução para os binstubs Rails
 RUN chmod +x /app/bin/rails /app/bin/rake
 
