@@ -59,21 +59,18 @@ RUN echo 'export PNPM_HOME="/root/.local/share/pnpm"' >> /root/.shrc \
 ENV PNPM_HOME="/root/.local/share/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
 
+# Garante que o container final enxergue os binstubs
+ENV PATH="/app/bin:/app/vendor/bundle/ruby/3.3.0/bin:$PATH"
+
 WORKDIR /app
 
-# Instala gems (sem dev/test em production)
-COPY Gemfile Gemfile.lock ./
-RUN if [ "$RAILS_ENV" = "production" ]; then \
-      bundle install --jobs 4 --retry 3 --deployment --without development test; \
-    else \
-      bundle install --jobs 4 --retry 3; \
-    fi
-
-    # Copia o Gemfile e Gemfile.lock
+# Copia Gemfile e Gemfile.lock
 COPY Gemfile Gemfile.lock ./
 
-# Instala os gems em modo deployment, dentro de vendor/bundle
-RUN bundle install --jobs 4 --retry 3 --deployment --without development test
+## Instala todos os gems em vendor/bundle, sem development/test
+RUN bundle install --jobs 4 --retry 3 \
+    --deployment --without development test
+    CMD ["bundle", "exec", "rails", "s", "-b", "0.0.0.0", "-p", "3000"]
 
 # Instala dependências nativas (incluindo vips via edge/community)
 RUN apk update && apk add --no-cache \
@@ -170,4 +167,4 @@ WORKDIR /app
 
 EXPOSE 3000
 
-CMD ["bundle", "exec", "rails", "s", "-b", "0.0.0.0", "-p", "3000"]
+CMD ["bin/rails", "server", "-b", "0.0.0.0", "-p", "3000"]
