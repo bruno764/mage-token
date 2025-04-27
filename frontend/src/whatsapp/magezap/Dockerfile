@@ -2,7 +2,7 @@
 FROM node:23-alpine AS node
 
 # Stage 1: pre-build (Ruby + dependências nativas)
-FROM ruby:3.3.3-alpine3.19 AS pre-builder
+FROM ruby:3.4.3-alpine3.19 AS pre-builder
 
 ARG NODE_VERSION="23.7.0"
 ARG PNPM_VERSION="10.2.0"
@@ -103,7 +103,7 @@ RUN rm -rf .git \
 
 
 # Stage final: imagem enxuta de produção
-FROM ruby:3.3.3-alpine3.19
+FROM ruby:3.4.3-alpine3.19
 
 ARG NODE_VERSION="23.7.0"
 ARG PNPM_VERSION="10.2.0"
