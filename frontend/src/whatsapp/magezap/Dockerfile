@@ -157,7 +157,14 @@ WORKDIR /app
 
 # Copia todo o app montado no pre-builder (mas ainda sem o git-gem)
 COPY --from=pre-builder /app /app
-
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    libssl-dev \
+    libreadline-dev \
+    zlib1g-dev \
+    linux-headers-$(uname -r) \
+    ruby-dev \
+    && apt-get clean
 # **Instala aqui de novo** (agora dentro da imagem final):
 RUN bundle install --jobs 4 --retry 3 \
     --path vendor/bundle \
