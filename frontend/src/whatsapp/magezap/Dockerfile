@@ -155,14 +155,17 @@ RUN if [ "$RAILS_ENV" != "production" ]; then \
 
 WORKDIR /app
 
-# copia tudo do pre-builder (incluindo vendor/bundle e bin/)
+# Copia todo o app montado no pre-builder (mas ainda sem o git-gem)
 COPY --from=pre-builder /app /app
 
-# garante que os binstubs sejam executáveis
-RUN chmod +x /app/bin/rails /app/bin/rake
+# **Instala aqui de novo** (agora dentro da imagem final):
+RUN bundle install --jobs 4 --retry 3 \
+    --path vendor/bundle \
+    --binstubs
 
-# ajusta o PATH para enxergar /app/bin e os executáveis em vendor/bundle
+# Torna os binstubs executáveis e ajusta o PATH
+RUN chmod +x bin/rails bin/rake
 ENV PATH="/app/bin:/app/vendor/bundle/ruby/3.3.0/bin:$PATH"
 
 EXPOSE 3000
-CMD ["bin/rails","server","-b","0.0.0.0","-p","3000"]
+CMD ["bin/rails", "server", "-b", "0.0.0.0", "-p", "3000"]
