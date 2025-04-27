@@ -61,21 +61,21 @@ ENV PATH="$PNPM_HOME:$PATH"
 
 WORKDIR /app
 
-# 2.1) força Bundler a usar /app/.bundle para configs locais
-ENV BUNDLE_APP_CONFIG="/app/.bundle"
-RUN mkdir -p /app/.bundle
-
-# 2.2) copia só Gemfile e Gemfile.lock
+# 1) copia apenas o Gemfile + Gemfile.lock
 COPY Gemfile Gemfile.lock ./
 
-# 2.3) configura Bundler e instala TUDO em vendor/bundle
-RUN bundle config set --local path 'vendor/bundle'       \
- && bundle config set --local bin 'bin'                  \
- && bundle config set --local without 'development test' \
- && bundle install --jobs 4 --retry 3
+# 2) bundle install em modo “local”:
+#    → --path vendor/bundle      → instala tudo em vendor/bundle
+#    → --binstubs                → gera os executáveis em bin/
+#    → --without development test → ignora dev/test
+RUN bundle install --jobs 4 --retry 3 \
+    --path vendor/bundle \
+    --binstubs \
+    --without development test
 
-# 2.4) expõe os executáveis do binstub e das gems
+# 3) expõe os executáveis na sua imagem
 ENV PATH="/app/bin:/app/vendor/bundle/ruby/3.3.0/bin:$PATH"
+
 
 
 # Instala dependências nativas (incluindo vips via edge/community)
@@ -86,22 +86,12 @@ RUN apk add --no-cache \
     --repository http://dl-cdn.alpinelinux.org/alpine/edge/community \
     vips
 
-# Instala pacotes JS via PNPM
-COPY package.json pnpm-lock.yaml ./
-RUN pnpm install --frozen-lockfile
-
-# Copia todo o código
-COPY . /app
-
-# Diretório de logs para não falhar se LOG_TO_STDOUT for false
-RUN mkdir -p /app/log
-
-# Etapa de pré-compilação de assets (exibe versões e usa --trace)
-RUN if [ "$RAILS_ENV" = "production" ]; then \
-      SECRET_KEY_BASE=precompile_placeholder RAILS_LOG_TO_STDOUT=enabled \
-      bundle exec rake assets:precompile --trace; \
-      rm -rf spec node_modules tmp/cache; \
-    fi
+    COPY . /app
+    RUN if [ "$RAILS_ENV" = "production" ]; then \
+          SECRET_KEY_BASE=precompile_placeholder RAILS_LOG_TO_STDOUT=enabled \
+          bundle exec rake assets:precompile --trace; \
+          rm -rf spec node_modules tmp/cache; \
+        fi
 
 # Grava o SHA do commit (fallback quando não houver .git)
 RUN git rev-parse HEAD > /app/.git_sha 2>/dev/null || \
@@ -160,21 +150,18 @@ RUN if [ "$RAILS_ENV" != "production" ]; then \
       && pnpm --version; \
     fi
 
-# Copia app pré-compilados do pre-builder
-COPY --from=pre-builder /app /app
 
-# Copia .git_sha
-COPY --from=pre-builder /app/.git_sha /app/.git_sha
+
 
 WORKDIR /app
 
-# 3.1) traga tudo do pre-builder (app + vendor/bundle + .bundle/config + bin/)
+# copia tudo do pre-builder (incluindo vendor/bundle e bin/)
 COPY --from=pre-builder /app /app
 
-# 3.2) certifique-se de que os binstubs são executáveis
+# garante que os binstubs sejam executáveis
 RUN chmod +x /app/bin/rails /app/bin/rake
 
-# 3.3) PATH para os binstubs
+# ajusta o PATH para enxergar /app/bin e os executáveis em vendor/bundle
 ENV PATH="/app/bin:/app/vendor/bundle/ruby/3.3.0/bin:$PATH"
 
 EXPOSE 3000
